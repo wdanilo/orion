@@ -1,0 +1,10 @@
+#!/usr/bin/python2.7
+
+import os
+pwd = os.path.dirname(os.path.abspath(__file__))
+eggsrcs = [os.path.join(pwd, eggpath) for eggpath in os.listdir(pwd)]
+eggsrcs = filter(os.path.isdir, eggsrcs)
+os.system('rm -f ../plugins/*')
+for eggsrc in eggsrcs:
+    os.chdir(eggsrc)
+    os.system('python setup.py bdist_egg -d ../../plugins')
