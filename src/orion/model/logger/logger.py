@@ -11,7 +11,7 @@ class Logger():
     def __init__(self, name, args):
         if args.verbose:
             verboseLevel = logging.DEBUG 
-            formatmsg = '%(levelname)s\t%(message)s (%(name)s)'
+            formatmsg = '%[(levelname)s]\t%(message)s (%(name)s)'
         else:
             if args.silent:
                 verboseLevel = logging.ERROR
@@ -20,7 +20,7 @@ class Logger():
                 
             formatmsg = '%(message)s'
             
-        formatter = ExtendedFormatter('%(levelname)s %(message)s','%Y:%m:%d:%H:%M:%S', not args.no_color, args.use_ident)
+        formatter = ExtendedFormatter('[%(levelname)s] %(message)s','%Y:%m:%d:%H:%M:%S', not args.no_color, args.use_ident)
         
         self.rootLogger = logging.root
         self.rootLogger.setLevel(logging.DEBUG)

@@ -1,16 +1,17 @@
 version = '0.1a'
 
-from pyutilib.component.core import *
+from pyutilib.component.core import ExtensionPoint, PluginGlobals
 from orion.api import IOrionPlugin
-from orion.core.cmdparser import CmdParser
+from orion.model.cmdparser import CmdParser
 from orion.model.logger import Logger
 
 import os
+import sys
 import logging
 logger = logging.getLogger(__name__)
 
 class Orion ( object ) :
-    plugins = ExtensionPoint(IOrionPlugin)
+    wmcore = ExtensionPoint(IOrionPlugin)
     
     def __init__ (self):
         self.tasks     = {}
@@ -20,7 +21,7 @@ class Orion ( object ) :
     def run(self):
         # fixing logging message types
         PluginGlobals.env().log.info = PluginGlobals.env().log.debug
-        PluginGlobals.env().log.warning = PluginGlobals.env().log.debug
+        #PluginGlobals.env().log.warning = PluginGlobals.env().log.debug
         PluginGlobals.push_env('orion')
         PluginGlobals.env().log.info = PluginGlobals.env().log.debug
         
@@ -37,10 +38,18 @@ class Orion ( object ) :
         
         logger.info('Orion Core started')
         
+        ''' DEBUG '''
+        import core
+        '''  '''
+        
         # test plugins
-        print 'Loaded plugins:'
-        for plugin in self.plugins:
-            print plugin
+        wmcores = self.wmcore.extensions()
+        if len(wmcores)>1:
+            logger.warning("more than 1 wmcore found. Selecting the first one.")
+        elif len(wmcores) == 0:
+            logger.critical('no wmcore plugins found. exiting.')
+            sys.exit()
+        wmcores[0].init()
         
         # clean env
         PluginGlobals.pop_env()
