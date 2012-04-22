@@ -1,5 +1,0 @@
-#!/bin/csh
-
-foreach i (*.out)
-  mv -f $i ${i:r}.txt
-end

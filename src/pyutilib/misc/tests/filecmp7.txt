@@ -1,4 +1,0 @@
-this 0.01
-is
-a
-test

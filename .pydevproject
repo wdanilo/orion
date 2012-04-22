@@ -9,4 +9,7 @@
 <path>/orion/plugins</path>
 <path>/orion/egg_devel</path>
 </pydev_pathproperty>
+<pydev_pathproperty name="org.python.pydev.PROJECT_EXTERNAL_SOURCE_PATH">
+<path>/home/wdanilo/dev/python</path>
+</pydev_pathproperty>
 </pydev_project>
