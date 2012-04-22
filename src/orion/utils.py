@@ -16,6 +16,18 @@ class flagEnum():
     def items(self):
         return self.__enums.items()
 
+class Vector2(object):
+    def __init__(self, x=0, y=0):
+        self.x = x
+        self.y = y
+
+
+###########################################
+#### ponizsze deklaracje do refraktoryzacji
+###########################################
+
+
+
 import operator, functools, os
 
 def lget(o, v):

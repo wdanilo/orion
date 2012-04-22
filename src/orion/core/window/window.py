@@ -3,7 +3,7 @@ from xcb.xproto import EventMask, CW
 import struct
 from orion import utils
 import contextlib
-
+from orion.signals import Signal
 import logging
 import iccm
 logger = logging.getLogger(__name__)
@@ -67,6 +67,18 @@ PropertyMap = {
     "QTILE_INTERNAL": ("CARDINAL", 32)
 }
 
+# hack xcb.xproto for negative numbers
+def ConfigureWindow(self, window, value_mask, value_list):
+    import cStringIO
+    from struct import pack
+    from array import array
+    buf = cStringIO.StringIO()
+    buf.write(pack('xx2xIH2x', window, value_mask))
+    buf.write(str(buffer(array('i', value_list))))
+    return self.send_request(xcb.Request(buf.getvalue(), 12, True, False),
+                                 xcb.VoidCookie())
+xcb.xproto.xprotoExtension.ConfigureWindow = ConfigureWindow
+
 class MaskMap:
     """
         A general utility class that encapsulates the way the mask/value idiom
@@ -104,12 +116,20 @@ ConfigureMasks = MaskMap(xcb.xproto.ConfigWindow)
 AttributeMasks = MaskMap(CW)
 GCMasks = MaskMap(xcb.xproto.GC)
 
+class WindowGeometry():
+    def __init__(self, x=0, y=0, width=100, height=100):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        
 class _Window(object):
     def __init__(self):
         self.hidden = True
         self.set_attribute(eventmask=self._windowMask)
         g = self.get_geometry()
-        self.__x, self.__y, self.width, self.height = g.x, g.y, g.width, g.height
+        self.__geo = WindowGeometry(g.x, g.y, g.width, g.height)
+        self.width, self.height = g.width, g.height
         self.borderwidth = 0
         self.bordercolor = None
         self.state = iccm.NormalState
@@ -470,6 +490,18 @@ class Window(_Window):
                   EventMask.FocusChange
                   
     def __init__(self, conn, wid):
+        self.onMouseEnter       = Signal()
+        self.onMouseLeave       = Signal()
+        self.onGetFocus         = Signal()
+        self.onLostFocus        = Signal()
+        self.onDragEnter        = Signal()
+        self.onDragLeave        = Signal()
+        self.onPositionChange   = Signal()
+        self.onMaximize         = Signal()
+        self.onMinimize         = Signal()
+        self.onTagAdded         = Signal()
+        self.onTagRemoved       = Signal()
+        
         self.conn, self.wid = conn, wid
         _Window.__init__(self)
 
@@ -510,19 +542,44 @@ class Window(_Window):
         except:
             print '@ ', name
             if name == events.ENTER_NOTIFY:
-                print self.x
+                print self.width
                 self.x += 1
             return
         handler(e)
     
     @property
-    def x(self):
-        return self.__x
+    def x(self): return self.__geo.x
     
     @x.setter
-    def x(self, pos):
-        self.configure(x=pos)
-        self.__x = pos
+    def x(self, val):
+        self.configure(x=val)
+        self.__geo.x = val
+    
+    @property
+    def y(self): return self.__geo.y
+    
+    @x.setter
+    def y(self, val):
+        self.configure(y=val)
+        self.__geo.y = val
+
+    @property
+    def width(self): return self.__geo.width
+    
+    @x.setter
+    def width(self, val):
+        self.configure(width=val)
+        self.__geo.width = val
+
+    @property
+    def height(self): return self.__geo.height
+    
+    @x.setter
+    def height(self, val):
+        self.configure(height=val)
+        self.__geo.height = val
+    
+    
     
     def handle_PropertyNotify(self, e):
         print '>>>>>'
