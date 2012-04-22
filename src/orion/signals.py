@@ -1,32 +1,27 @@
-"""
-File:    signals.py
-Author:  Patrick Chasco
-Created: July 26, 2005
-
-Purpose: A signals implementation
-"""
-
-
-#========================================================
-# Implementation
-#========================================================
 from weakref import *
 import inspect
+import sys
 
+class Event(object):
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        for key, val in kwargs.items():
+            setattr(self, key, val)
+    
+    def __str__(self):
+        return 'Event '+str(self.__dict__)
+    
 class Signal:
-    """
-    class Signal
-
-    A simple implementation of the Signal/Slot pattern. To use, simply 
-    create a Signal instance. The instance may be a member of a class, 
-    a global, or a local; it makes no difference what scope it resides 
-    within. Connect slots to the signal using the "connect()" method. 
-    The slot may be a member of a class or a simple function. If the 
-    slot is a member of a class, Signal will automatically detect when
-    the method's class instance has been deleted and remove it from 
-    its list of connected slots.
-    """
     def __init__(self):
+        stack = inspect.stack()
+        frame = stack[1][0]
+        flocals = frame.f_locals
+        caller = flocals.get('self', None)
+        if not caller:
+            modname = flocals.get('__name__', None)
+            if modname: caller = sys.modules[modname]
+        self.__target = caller
+    
         self.slots = []
 
         # for keeping references to _WeakMethod_FuncHost objects.
@@ -35,10 +30,11 @@ class Signal:
         self.funchost = []
 
     def __call__(self, *args, **kwargs):
+        event = Event(*args, target=self.__target, **kwargs)
         for i in range(len(self.slots)):
             slot = self.slots[i]
             if slot != None:
-                slot(*args, **kwargs)
+                slot(event)
             else:
                 del self.slots[i]
                 
@@ -90,3 +86,19 @@ class WeakMethod:
     def __call__(self, *args, **kwargs):
             if self.c() == None : return
             self.f(self.c(), *args, **kwargs)
+        
+
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        

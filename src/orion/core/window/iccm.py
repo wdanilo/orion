@@ -29,8 +29,8 @@ UrgencyHint    = (1 << 8)
 AllHints = (InputHint|StateHint|IconPixmapHint|IconWindowHint|
             IconPositionHint|IconMaskHint|WindowGroupHint|MessageHint|
             UrgencyHint)
-WithdrawnState = 0
 
+WithdrawnState = 0
 DontCareState = 0
 NormalState = 1
 ZoomState = 2

@@ -6,6 +6,7 @@ import contextlib
 from orion.signals import Signal
 import logging
 import iccm
+from hints import WindowHints, WindowNormalHints
 logger = logging.getLogger(__name__)
 
 events = utils.enum(
@@ -14,32 +15,9 @@ events = utils.enum(
     ENTER_NOTIFY='EnterNotify',
     )
 
-NormalHintsFlags = utils.flagEnum(
-    'USPosition',       # User-specified x, y
-    'USSize',           # User-specified width, height
-    'PPosition',        # Program-specified position
-    'PSize',            # Program-specified size
-    'PMinSize',         # Program-specified minimum size
-    'PMaxSize',         # Program-specified maximum size
-    'PResizeInc',       # Program-specified resize increments
-    'PAspect',          # Program-specified min and max aspect ratios
-    'PBaseSize',        # Program-specified base size
-    'PWinGravity'       # Program-specified window gravity
-)
 
-HintsFlags = utils.flagEnum(
-    'InputHint',        # input
-    'StateHint',        # initial_state
-    'IconPixmapHint',   # icon_pixmap
-    'IconWindowHint',   # icon_window
-    'IconPositionHint', # icon_x & icon_y
-    'IconMaskHint',     # icon_mask
-    'WindowGroupHint',  # window_group
-    'MessageHint',      # (this bit is obsolete)
-    'UrgencyHint',      # urgency
-)
-
-states = utils.flagEnum('NOT_FLOATING','FLOATING','MAXIMIZED','FULLSCREEN','TOP','MINIMIZED')
+floatStates = utils.flagEnum('NOT_FLOATING','FLOATING','MAXIMIZED','FULLSCREEN','TOP','MINIMIZED')
+tileStates  = utils.flagEnum('WITHDRAWN', 'DONT_CARE', 'NORMAL', 'ZOOM', 'ICONIC', 'INACTIVE')
 
 
 PropertyMap = {
@@ -122,73 +100,31 @@ class WindowGeometry():
         self.y = y
         self.width = width
         self.height = height
-        
+
 class _Window(object):
     def __init__(self):
         self.hidden = True
         self.set_attribute(eventmask=self._windowMask)
         g = self.get_geometry()
         self.__geo = WindowGeometry(g.x, g.y, g.width, g.height)
-        self.width, self.height = g.width, g.height
         self.borderwidth = 0
         self.bordercolor = None
         self.state = iccm.NormalState
-        self_type = "normal"
-        self._float_state = states.NOT_FLOATING
-        # note that _float_info x and y are
-        # really offsets, relative to screen x,y
-        self._float_info = {
-            'x': g.x, 'y': g.y,
-            'w': g.width, 'h': g.height
-            }
+        self._float_state = floatStates.NOT_FLOATING
 
-        self.hints = {
-            'input': True,
-            'state':iccm. NormalState, #Normal state
-            'icon_pixmap': None,
-            'icon_window': None,
-            'icon_x': 0,
-            'icon_y': 0,
-            'icon_mask': 0,
-            'window_group': None,
-            'urgent': False,
-            # normal or size hints
-            'width_inc': None,
-            'height_inc': None,
-            'base_width': 0,
-            'base_height': 0,
-            }
+        self.__hints        = WindowHints()
+        self.__normal_hints = WindowNormalHints()
         self.updateHints()
     
     def updateHints(self):
-        """
-            update the local copy of the window's WM_HINTS
+        """ update the local copy of the window's WM_HINTS
             http://tronche.com/gui/x/icccm/sec-4.html#WM_HINTS
         """
         try:
-            h = self.get_wm_hints()
-            normh = self.get_wm_normal_hints()
+            h = self.__wmHints()
+            normh = self.__wmNormalHints()
         except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
             return
-
-        # FIXME
-        # h values
-        #{
-        #    'icon_pixmap': 4194337,
-        #    'icon_window': 0,
-        #    'icon_mask': 4194340,
-        #    'icon_y': 0,
-        #    'input': 1,
-        #    'icon_x': 0,
-        #    'window_group': 4194305
-        #    'initial_state': 1,
-        #    'flags': set(['StateHint',
-        #                  'IconMaskHint',
-        #                  'WindowGroupHint',
-        #                  'InputHint',
-        #                  'UrgencyHint',
-        #                  'IconPixmapHint']),
-        #}
 
         if normh:
             normh.pop('flags')
@@ -200,19 +136,18 @@ class _Window(object):
                 and normh['min_height'] and normh['height_inc']):
                 # seems xcb does ignore base height :(
                 normh['base_height'] = normh['min_height'] % normh['height_inc']
-            self.hints.update(normh)
-
-        if h and 'UrgencyHint' in h['flags']:
-            self.hints['urgent'] = True
-            hook.fire('client_urgent_hint_changed', self)
-        elif self.urgent:
-            self.hints['urgent'] = False
-            hook.fire('client_urgent_hint_changed', self)
-
-        if getattr(self, 'group', None):
-            self.group.layoutAll()
-
-        return
+            self.__normal_hints.update(normh)
+            
+            
+        if h:
+            if 'UrgencyHint' in h['flags']:
+                self.__hints.urgent = True
+                print '__TODO__'
+            #elif self.urgent:
+            #    self.__hints.urgent = False
+            
+            h.pop('flags')
+            self.__hints.update(h)
     
     @property
     def name(self):
@@ -234,22 +169,14 @@ class _Window(object):
     def updateState(self):
         self.fullscreen = self.get_net_wm_state() == 'fullscreen'
 
-    @property
-    def urgent(self):
-        return self.hints['urgent']
 
     def info(self):
-        if self.group:
-            group = self.group.name
-        else:
-            group = None
         return dict(
             name = self.name,
             x = self.x,
             y = self.y,
             width = self.width,
             height = self.height,
-            group = group,
             id = self.wid,
             floating = self._float_state != NOT_FLOATING,
             float_info = self._float_info,
@@ -265,7 +192,7 @@ class _Window(object):
 
     @state.setter
     def state(self, val):
-        if val in (iccm.WithdrawnState, iccm.NormalState, iccm.IconicState):
+        if val in (tileStates.WITHDRAWN, tileStates.NORMAL, tileStates.ICONIC):
             self.setProperty('WM_STATE', [val, 0])
 
     def setOpacity(self, opacity):
@@ -458,8 +385,8 @@ class _Window(object):
             "do_not_propagate_mask": a.do_not_propagate_mask
         }
         props = self.list_properties()
-        normalhints = self.get_wm_normal_hints()
-        hints = self.get_wm_hints()
+        normalhints = self.__wmNormalHints()
+        hints = self.__wmHints()
         protocols = []
         for i in self.get_wm_protocols():
             protocols.append(i)
@@ -490,6 +417,8 @@ class Window(_Window):
                   EventMask.FocusChange
                   
     def __init__(self, conn, wid):
+        self.onCreate           = Signal()
+        self.onDestroy          = Signal()
         self.onMouseEnter       = Signal()
         self.onMouseLeave       = Signal()
         self.onGetFocus         = Signal()
@@ -537,13 +466,10 @@ class Window(_Window):
         try:
             handler = {
                        events.PROPERTY_NOTIFY     : self.handle_PropertyNotify,
-                       events.CONFIGURE_NOTIFY    : self.handle_ConfigureNotify,
+                       events.ENTER_NOTIFY        : self.handle_EnterNotify,
             }[name]
         except:
-            print '@ ', name
-            if name == events.ENTER_NOTIFY:
-                print self.width
-                self.x += 1
+            print '@@@ ', name
             return
         handler(e)
     
@@ -612,13 +538,55 @@ class Window(_Window):
         return False
     
     def handle_EnterNotify(self, e):
-        #hook.fire("client_mouse_enter", self)
-        #if self.qtile.config.follow_mouse_focus and \
-        #                self.group.currentWindow != self:
-        #    self.group.focus(self, False)
-        if self.group.screen and self.qtile.currentScreen != self.group.screen:
-            self.qtile.toScreen(self.group.screen.index)
-        return True
+        self.onMouseEnter()
+    
+    def __wmHints(self):
+        ''' Reads and decodes WM_HINTS property (http://tronche.com/gui/x/icccm/sec-4.html#WM_HINTS) '''
+        r = self.windowProperty("WM_HINTS", xcb.xproto.GetPropertyType.Any)
+        if r:
+            data = struct.pack("B" * len(r.value), *(list(r.value)))
+            l = struct.unpack_from("=IIIIIIIII", data)
+            flags = set()
+            for k, v in WindowHints.flags.items():
+                if l[0]&v:
+                    flags.add(k)
+            return dict(
+                flags           = flags,
+                input           = l[1],
+                initial_state   = l[2],
+                icon_pixmap     = l[3],
+                icon_window     = l[4],
+                icon_x          = l[5],
+                icon_y          = l[6],
+                icon_mask       = l[7],
+                window_group    = l[8]
+            )
+
+    def __wmNormalHints(self):
+        ''' Reads and decodes WM_NORMAL_HINTS property (http://tronche.com/gui/x/icccm/sec-4.html#WM_HINTS) '''
+        r = self.windowProperty("WM_NORMAL_HINTS", xcb.xproto.GetPropertyType.Any)
+        if r:
+            data = struct.pack("B" * len(r.value), *(list(r.value)))
+            l = struct.unpack_from("=IIIIIIIIIIIIII", data)
+            flags = set()
+            for k, v in WindowNormalHints.flags.items():
+                if l[0]&v:
+                    flags.add(k)
+            return dict(
+                flags       = flags,
+                min_width   = l[1+4],
+                min_height  = l[2+4],
+                max_width   = l[3+4],
+                max_height  = l[4+4],
+                width_inc   = l[5+4],
+                height_inc  = l[6+4],
+                min_aspect  = l[7+4],
+                max_aspect  = l[8+4],
+                base_width  = l[9+4],
+                base_height = l[9+4],
+                win_gravity = l[9+4],
+            )
+            
     ###################################
 
     def _propertyString(self, r):
@@ -639,51 +607,6 @@ class Window(_Window):
             self.wid,
             xcb.xproto.Time.CurrentTime
         )
-
-    def get_wm_hints(self):
-        r = self.windowProperty("WM_HINTS", xcb.xproto.GetPropertyType.Any)
-        if r:
-            data = struct.pack("B" * len(r.value), *(list(r.value)))
-            l = struct.unpack_from("=IIIIIIIII", data)
-            flags = set()
-            for k, v in HintsFlags.items():
-                if l[0]&v:
-                    flags.add(k)
-            return dict(
-                flags = flags,
-                input = l[1],
-                initial_state = l[2],
-                icon_pixmap = l[3],
-                icon_window = l[4],
-                icon_x = l[5],
-                icon_y = l[6],
-                icon_mask = l[7],
-                window_group = l[8]
-            )
-
-    def get_wm_normal_hints(self):
-        r = self.windowProperty("WM_NORMAL_HINTS", xcb.xproto.GetPropertyType.Any)
-        if r:
-            data = struct.pack("B" * len(r.value), *(list(r.value)))
-            l = struct.unpack_from("=IIIIIIIIIIIIII", data)
-            flags = set()
-            for k, v in NormalHintsFlags.items():
-                if l[0]&v:
-                    flags.add(k)
-            return dict(
-                flags = flags,
-                min_width = l[1+4],
-                min_height = l[2+4],
-                max_width = l[3+4],
-                max_height = l[4+4],
-                width_inc = l[5+4],
-                height_inc = l[6+4],
-                min_aspect = l[7+4],
-                max_aspect = l[8+4],
-                base_width = l[9+4],
-                base_height = l[9+4],
-                win_gravity = l[9+4],
-            )
 
     def get_wm_protocols(self):
         r = self.windowProperty("WM_PROTOCOLS", xcb.xproto.GetPropertyType.Any)
@@ -909,52 +832,52 @@ class Window(_Window):
 
     @property
     def floating(self):
-        return self._float_state != NOT_FLOATING
+        return self._float_state != floatStates.NOT_FLOATING
 
     @floating.setter
     def floating(self, do_float):
         if do_float:
-            if self._float_state == NOT_FLOATING:
+            if self._float_state == floatStates.NOT_FLOATING:
                 self.enablefloating()
 
 
     @property
     def fullscreen(self):
-        return self._float_state == FULLSCREEN
+        return self._float_state == floatStates.FULLSCREEN
 
     @fullscreen.setter
     def fullscreen(self, do_full):
         if do_full:
-            if self._float_state != FULLSCREEN:
-                self.enablemaximize(state=FULLSCREEN)
+            if self._float_state != floatStates.FULLSCREEN:
+                self.enablemaximize(state=floatStates.FULLSCREEN)
         else:
-            if self._float_state == FULLSCREEN:
+            if self._float_state == floatStates.FULLSCREEN:
                 self.disablefloating()
 
     @property
     def maximized(self):
-        return self._float_state == MAXIMIZED
+        return self._float_state == floatStates.MAXIMIZED
 
     @maximized.setter
     def maximized(self, do_maximize):
         if do_maximize:
-            if self._float_state != MAXIMIZED:
+            if self._float_state != floatStates.MAXIMIZED:
                 self.enablemaximize()
         else:
-            if self._float_state == MAXIMIZED:
+            if self._float_state == floatStates.MAXIMIZED:
                 self.disablefloating()
 
     @property
     def minimized(self):
-        return self._float_state == MINIMIZED
+        return self._float_state == floatStates.MINIMIZED
 
     @minimized.setter
     def minimized(self, do_minimize):
         if do_minimize:
-            if self._float_state != MINIMIZED:
+            if self._float_state != floatStates.MINIMIZED:
                 self.enableminimize()
         else:
-            if self._float_state == MINIMIZED:
+            if self._float_state == floatStates.MINIMIZED:
                 self.disablefloating()
 
 
@@ -1021,23 +944,23 @@ class Window(_Window):
             self.enableminimize()
 
     def enableminimize(self):
-        self._enablefloating(new_float_state=states.MINIMIZED)
+        self._enablefloating(new_float_state=floatStates.MINIMIZED)
 
-    def togglemaximize(self, state=states.MAXIMIZED):
+    def togglemaximize(self, state=floatStates.MAXIMIZED):
         if self._float_state == state:
             self.disablefloating()
         else:
             self.enablemaximize(state)
 
-    def enablemaximize(self, state=states.MAXIMIZED):
+    def enablemaximize(self, state=floatStates.MAXIMIZED):
         screen = self.group.screen
-        if state == states.MAXIMIZED:
+        if state == floatStates.MAXIMIZED:
             self._enablefloating(screen.dx,
                              screen.dy,
                              screen.dwidth,
                              screen.dheight,
                              new_float_state=state)
-        elif state == states.FULLSCREEN:
+        elif state == floatStates.FULLSCREEN:
             self._enablefloating(screen.x,
                                  screen.y,
                                  screen.width,
@@ -1050,9 +973,9 @@ class Window(_Window):
         else:
             self.enablefloating()
 
-    def _reconfigure_floating(self, new_float_state=states.FLOATING):
-        if new_float_state == states.MINIMIZED:
-            self.state = iccm.IconicState
+    def _reconfigure_floating(self, new_float_state=floatStates.FLOATING):
+        if new_float_state == floatStates.MINIMIZED:
+            self.state = tileStates.ICONIC
             self.hide()
         else:
             # make sure x, y is on the screen
@@ -1075,8 +998,8 @@ class Window(_Window):
                 self.group.mark_floating(self, True)
             hook.fire('float_change')
 
-    def _enablefloating(self, x=None, y=None, w=None, h=None, new_float_state=states.FLOATING):
-        if new_float_state != states.MINIMIZED:
+    def _enablefloating(self, x=None, y=None, w=None, h=None, new_float_state=floatStates.FLOATING):
+        if new_float_state != floatStates.MINIMIZED:
             self.x = x
             self.y = y
             self.width = w
@@ -1089,13 +1012,13 @@ class Window(_Window):
         self._enablefloating(fi['x'], fi['y'], fi['w'], fi['h'])
 
     def disablefloating(self):
-        if self._float_state != states.NOT_FLOATING:
-            if self._float_state == states.FLOATING:
+        if self._float_state != floatStates.NOT_FLOATING:
+            if self._float_state == floatStates.FLOATING:
                 # store last size
                 fi = self._float_info
                 fi['w'] = self.width
                 fi['h'] = self.height
-            self._float_state = states.NOT_FLOATING
+            self._float_state = floatStates.NOT_FLOATING
             self.group.mark_floating(self, False)
             hook.fire('float_change')
 

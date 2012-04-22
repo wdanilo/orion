@@ -7,6 +7,7 @@ class FileTracer(object):
     stdout = None
     enabled = False
     flushed = True
+    traceNumber = 0
     
     @staticmethod
     def enable():
@@ -31,7 +32,8 @@ class FileTracer(object):
             name = os.path.basename(path)
             if name == '__init__.py':
                 name = os.path.basename(os.path.dirname(path))+'/'+name
-            s = ' (%s: %s)\n'%(calframe[1][2], name)
+            s = ' (%s: %s, traceno: %s)\n'%(calframe[1][2], name, FileTracer.traceNumber)
+            FileTracer.traceNumber += 1
         else:
             FileTracer.flushed = False
         FileTracer.stdout.write(s)
