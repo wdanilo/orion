@@ -2,7 +2,45 @@
 import os
 import sys
 
+import inspect
+class FileTracer(object):
+    stdout = None
+    enabled = False
+    flushed = True
+    
+    @staticmethod
+    def enable():
+        if not FileTracer.enabled:
+            FileTracer.enabled = True
+            FileTracer.stdout = sys.stdout
+            sys.stdout = FileTracer
+    
+    @staticmethod
+    def disable():
+        if FileTracer.enabled:
+            FileTracer.enabled = False
+            sys.stdout = FileTracer.stdout
+            
+    @staticmethod
+    def write(s):
+        curframe = inspect.currentframe()
+        calframe = inspect.getouterframes(curframe, 2)
+        if s == '\n' and not FileTracer.flushed:
+            FileTracer.flushed = True
+            path = calframe[1][1]
+            name = os.path.basename(path)
+            if name == '__init__.py':
+                name = os.path.basename(os.path.dirname(path))+'/'+name
+            s = ' (%s: %s)\n'%(calframe[1][2], name)
+        else:
+            FileTracer.flushed = False
+        FileTracer.stdout.write(s)
+    
+    
+    
 if __name__ == '__main__':
+    FileTracer.enable()
+    
     # update environment variables
     env        = []
     installdir = os.path.dirname(__file__)
