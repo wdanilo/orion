@@ -44,15 +44,7 @@ class File(object):
 
         self.fname = fname
 
-        if os.path.isfile(fname):
-            try:
-                sys.path.insert(0, os.path.dirname(self.fname))
-                config = __import__(os.path.basename(self.fname)[:-3])
-            except Exception, v:
-                tb = traceback.format_exc()
-                raise ConfigError(str(v) + "\n\n" + tb)
-        else:
-            config = None
+        config = None
 
         # if you add something here, be sure to add a reasonable default value
         # to resources/default-config.py

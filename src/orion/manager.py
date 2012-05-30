@@ -668,9 +668,6 @@ class Log:
 
 
 class Qtile(command.CommandObject):
-    """
-        This object is the __root__ of the command graph.
-    """
     debug = False
     _exit = False
     _testing = False
@@ -756,11 +753,15 @@ class Qtile(command.CommandObject):
             print >> sys.stderr, "Access denied: Another window manager running?"
             sys.exit(1)
 
-        self.server = command._Server(self.fname, self, config)
+        #self.server = command._Server(self.fname, self, config)
 
-        # Map and Grab keys
-        for key in self.config.keys:
-            self.mapKey(key)
+        self.root.grab_key(
+            52,
+            8,
+            True,
+            xcb.xproto.GrabMode.Async,
+            xcb.xproto.GrabMode.Async,
+        )
 
         self.mouseMap = {}
         for i in self.config.mouse:
@@ -772,23 +773,8 @@ class Qtile(command.CommandObject):
 
         self.scan()
 
-    def _process_fake_screens(self):
-        """
-        Since Xephyr, Xnest don't really support offset screens,
-        we'll fake it here for testing, (or if you want to partition
-        a physical monitor into separate screens)
-        """
-        for i, s in enumerate(self.config.fake_screens):
-            # should have x,y, width and height set
-            s._configure(self, i, s.x, s.y, s.width, s.height, self.groups[i])
-            if not self.currentScreen:
-                self.currentScreen = s
-            self.screens.append(s)
 
     def _process_screens(self):
-        if hasattr(self.config, 'fake_screens'):
-            self._process_fake_screens()
-            return
         for i, s in enumerate(self.conn.pseudoscreens):
             if i+1 > len(self.config.screens):
                 scr = Screen()
@@ -1061,6 +1047,8 @@ class Qtile(command.CommandObject):
 
                 if ename.endswith("Event"):
                     ename = ename[:-5]
+                    
+                print 'EVENT: '+ename
                 if self.debug:
                     if ename != self._prev:
                         print >> sys.stderr, '\n', ename,
@@ -1086,7 +1074,7 @@ class Qtile(command.CommandObject):
 
     def loop(self):
 
-        self.server.start()
+        #self.server.start()
         display_tag = gobject.io_add_watch(self.conn.conn.get_file_descriptor(), gobject.IO_IN, self._xpoll)
         try:
             context = gobject.main_context_default()
@@ -1187,6 +1175,10 @@ class Qtile(command.CommandObject):
             self.toScreen(s.index)
 
     def handle_KeyPress(self, e):
+        import subprocess
+        subprocess.Popen('gnome-terminal')
+        return
+        '''
         keysym = self.conn.code_to_syms[e.detail][0]
         state = e.state
         if self.numlockMask:
@@ -1204,6 +1196,7 @@ class Qtile(command.CommandObject):
                     print >> sys.stderr, s
         else:
             return
+        '''
 
     def handle_ButtonPress(self, e):
         button_code = e.detail
