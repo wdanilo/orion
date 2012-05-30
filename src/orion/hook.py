@@ -3,6 +3,9 @@ import manager
 subscriptions = {}
 SKIPLOG = set()
 
+import logging
+logger = logging.getLogger(__name__)
+
 def init(q):
     global qtile
     qtile = q
@@ -175,6 +178,6 @@ def fire(event, *args, **kwargs):
     if event not in subscribe.hooks:
         raise manager.QtileError("Unknown event: %s"%event)
     if not event in SKIPLOG:
-        qtile.log.add("Internal event: %s(%s, %s)"%(event, args, kwargs))
+        logger.debug("Internal event: %s(%s, %s)"%(event, args, kwargs))
     for i in subscriptions.get(event, []):
         i(*args, **kwargs)

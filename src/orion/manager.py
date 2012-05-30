@@ -27,6 +27,10 @@ from xcb.xproto import EventMask
 import command, utils, window, hook
 
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 class QtileError(Exception): pass
 
 
@@ -668,12 +672,8 @@ class Log:
 
 
 class Qtile(command.CommandObject):
-    debug = False
     _exit = False
-    _testing = False
-    _logLength = 100
-    def __init__(self, config, displayName=None, fname=None, testing=False):
-        self._testing = testing
+    def __init__(self, config, displayName=None, fname=None):
         if not displayName:
             displayName = os.environ.get("DISPLAY")
             if not displayName:
@@ -689,10 +689,6 @@ class Qtile(command.CommandObject):
 
         self.conn = xcbq.Connection(displayName)
         self.config, self.fname = config, fname
-        self.log = Log(
-                self._logLength,
-                sys.stderr if self.debug else None
-            )
         hook.init(self)
 
         self.keyMap = {}
@@ -1029,47 +1025,30 @@ class Qtile(command.CommandObject):
         if hasattr(self, handler):
             chain.append(getattr(self, handler))
         if not chain:
-            self.log.add("Unknown event: %r"%ename)
+            logger.debug("Unknown event: %r"%ename)
         return chain
 
     def _xpoll(self, conn=None, cond=None):
         while True:
-            try:
-                e = self.conn.conn.poll_for_event()
-                if not e:
-                    break
-                # This should be done in xpyb
-                # client mesages start at 128
-                if e.response_type >= 128:
-                    e = xcb.xproto.ClientMessageEvent(e)
+            e = self.conn.conn.poll_for_event()
+            if not e:
+                break
+            # This should be done in xpyb
+            # client mesages start at 128
+            if e.response_type >= 128:
+                e = xcb.xproto.ClientMessageEvent(e)
 
-                ename = e.__class__.__name__
+            ename = e.__class__.__name__
 
-                if ename.endswith("Event"):
-                    ename = ename[:-5]
-                    
-                print 'EVENT: '+ename
-                if self.debug:
-                    if ename != self._prev:
-                        print >> sys.stderr, '\n', ename,
-                        self._prev = ename
-                        self._prev_count = 0
-                    else:
-                        self._prev_count += 1
-                        # only print every 10th
-                        if self._prev_count % 20 == 0:
-                            print >> sys.stderr, '.',
-                if not e.__class__ in self.ignoreEvents:
-                    for h in self.get_target_chain(ename, e):
-                        self.log.add("Handling: %s"%ename)
-                        r = h(e)
-                        if not r:
-                            break
-            except Exception, v:
-                self.errorHandler(v)
-                if self._exit:
-                    return False
-                continue
+            if ename.endswith("Event"):
+                ename = ename[:-5]
+                
+            if not e.__class__ in self.ignoreEvents:
+                for h in self.get_target_chain(ename, e):
+                    logger.debug("Handling: %s"%ename)
+                    r = h(e)
+                    if not r:
+                        break
         return True
 
     def loop(self):
@@ -1332,40 +1311,6 @@ class Qtile(command.CommandObject):
             self.addGroup(group)
             self.currentWindow.togroup(group)
 
-    def writeReport(self, m, path="~/qtile_crashreport", _force=False):
-        if self._testing and not _force:
-            print >> sys.stderr, "Server Error:", m
-            return
-        suffix = 0
-        base = p = os.path.expanduser(path)
-        while 1:
-            if not os.path.exists(p):
-                break
-            p = base + ".%s"%suffix
-            suffix += 1
-        f = open(p, "a+")
-        print >> f, "*** QTILE REPORT", datetime.datetime.now()
-        print >> f, "Message:", m
-        print >> f, "Last %s events:"%self.log.length
-        self.log.write(f, "\t")
-        f.close()
-
-    def errorHandler(self, e):
-        if hasattr(e.args[0], "bad_value"):
-            m = "\n".join([
-                "Server Error: %s"%e.__class__.__name__,
-                "\tbad_value: %s"%e.args[0].bad_value,
-                "\tmajor_opcode: %s"%e.args[0].major_opcode,
-                "\tminor_opcode: %s"%e.args[0].minor_opcode
-            ] + [traceback.format_exc()])
-        else:
-            m = traceback.format_exc()
-
-        if self._testing:
-            print >> sys.stderr, m
-        else:
-            self.writeReport(m)
-        self._exit = True
 
     def _items(self, name):
         if name == "group":
@@ -1415,20 +1360,6 @@ class Qtile(command.CommandObject):
             if i.window.wid == wid:
                 return i
         return None
-
-    def cmd_debug(self):
-        """
-            Toggle qtile debug logging. Returns "on" or "off" to indicate the
-            resulting debug status.
-        """
-        if self.debug:
-            self.debug = False
-            self.log.debug = None
-            return "off"
-        else:
-            self.debug = True
-            self.log.debug = sys.stderr
-            return "on"
 
     def cmd_groups(self):
         """

@@ -1,9 +1,13 @@
 
 import os, os.path, sys
 from orion import confreader, manager
+from orion.model.logger import Logger
 
 def run():
     from optparse import OptionParser, OptionGroup
+    
+    l = Logger('orion', verbose=True)
+    
     parser = OptionParser(version="%prog 0.4")
     parser.add_option(
                         "-c", "--config",

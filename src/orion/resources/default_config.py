@@ -1,6 +1,5 @@
-from orion.manager import Key, Screen, Group
-from orion.command import lazy
-from orion import layout, bar, widget
+from orion.manager import Screen, Group
+from orion import layout
 
 keys = []
 
