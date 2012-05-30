@@ -22,7 +22,7 @@ class CoreError(Exception): pass
 def f (event):
     from random import random
     print 'TO DELETE '*10
-    event.target.x+=int((random()-0.5)*100)
+    #event.target.x+=int((random()-0.5)*100)
     
 class Core ( SingletonPlugin ) :
     implements ( IOrionPlugin )
@@ -63,6 +63,15 @@ class Core ( SingletonPlugin ) :
             xcb.xproto.NoExposureEvent
         )
         
+        print self.root
+        self.root.grab_key(
+            52,
+            8,
+            True,
+            xcb.xproto.GrabMode.Async,
+            xcb.xproto.GrabMode.Async,
+        )
+        
         self.conn.flush()
         self.conn.xsync()
         self._xpoll()
@@ -101,6 +110,7 @@ class Core ( SingletonPlugin ) :
             e = self.conn.conn.poll_for_event()
             if not e:
                 break
+            print 'EVENT: ',e
 #            print e
 #            print dir(e)
 #            print e.response_type
@@ -124,7 +134,7 @@ class Core ( SingletonPlugin ) :
                 self.handleEvent(ename, e)
                 
             '''except Exception, v:
-                raise v
+                raise v<s
                 self.errorHandler(v)
                 if self._exit:
                     return False
@@ -134,6 +144,10 @@ class Core ( SingletonPlugin ) :
     
     def handleEvent(self, name, e):
         print '!', name, hasattr(e, "window")
+        if name=='KeyPress':
+            import subprocess
+            subprocess.Popen(['gnome-terminal'])
+            
         if name == 'EnterNotify':
             print dir(e)
             print e.detail

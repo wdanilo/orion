@@ -9,6 +9,8 @@ import iccm
 from hints import WindowHints, WindowNormalHints
 logger = logging.getLogger(__name__)
 
+import traceback
+
 events = utils.enum(
     PROPERTY_NOTIFY='PropertyNotify',
     CONFIGURE_NOTIFY='ConfigureNotify',
@@ -463,6 +465,8 @@ class Window(_Window):
         return [self.conn.atoms.get_name(i) for i in r.atoms]
     
     def handleEvent(self, name, e):
+        for line in traceback.format_stack():
+            print line.strip()
         try:
             handler = {
                        events.PROPERTY_NOTIFY     : self.handle_PropertyNotify,
@@ -586,6 +590,16 @@ class Window(_Window):
                 base_height = l[9+4],
                 win_gravity = l[9+4],
             )
+            
+    def grab_key(self, key, modifiers, owner_events, pointer_mode, keyboard_mode):
+        self.conn.conn.core.GrabKey(
+            owner_events,
+            self.wid,
+            modifiers,
+            key,
+            pointer_mode,
+            keyboard_mode
+        )
             
     ###################################
 
@@ -758,16 +772,6 @@ class Window(_Window):
         if modifiers is None:
             modifiers = xcb.xproto.ModMask.Any
         self.conn.conn.core.UngrabKey(key, self.wid, modifiers)
-
-    def grab_key(self, key, modifiers, owner_events, pointer_mode, keyboard_mode):
-        self.conn.conn.core.GrabKey(
-            owner_events,
-            self.wid,
-            modifiers,
-            key,
-            pointer_mode,
-            keyboard_mode
-        )
 
     def ungrab_button(self, button, modifiers):
         """

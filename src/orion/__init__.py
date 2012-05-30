@@ -49,6 +49,7 @@ class Orion ( object ) :
         elif len(wmcores) == 0:
             logger.critical('no wmcore plugins found. exiting.')
             sys.exit()
+        print wmcores[0]
         wmcores[0].init()
         
         # clean env
