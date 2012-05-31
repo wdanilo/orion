@@ -12,6 +12,18 @@ AllValues = 0x000F
 XNegative = 0x0010
 YNegative = 0x0020
 
+ReleaseByFreeingColormap = 1
+BitmapSuccess = 0
+BitmapOpenFailed = 1
+BitmapFileInvalid = 2
+BitmapNoMemory = 3
+XCSUCCESS = 0
+XCNOMEM = 1
+XCNOENT = 2
+
+RectangleOut = 0
+RectangleIn = 1
+RectanglePart = 2
 
 NormalHintsFlags = flagEnum (
     'USPosition',               # User-specified x, y

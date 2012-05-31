@@ -30,7 +30,6 @@ import hook
 from utils import flagEnum, enum
 
 
-
 sizeHintsFlags = flagEnum(
         'USPosition',
         'USSize',
@@ -71,28 +70,21 @@ wmState = enum(
         'INACTIVE',
 )
 
-RectangleOut = 0
-RectangleIn = 1
-RectanglePart = 2
-VisualNoMask = 0x0
-VisualIDMask = 0x1
-VisualScreenMask = 0x2
-VisualDepthMask = 0x4
-VisualClassMask = 0x8
-VisualRedMaskMask = 0x10
-VisualGreenMaskMask = 0x20
-VisualBlueMaskMask = 0x40
-VisualColormapSizeMask = 0x80
-VisualBitsPerRGBMask = 0x100
-VisualAllMask = 0x1FF
-ReleaseByFreeingColormap = 1
-BitmapSuccess = 0
-BitmapOpenFailed = 1
-BitmapFileInvalid = 2
-BitmapNoMemory = 3
-XCSUCCESS = 0
-XCNOMEM = 1
-XCNOENT = 2
+
+visualMask = enum(
+        VisualNoMask = 0x0,
+        VisualIDMask = 0x1,
+        VisualScreenMask = 0x2,
+        VisualDepthMask = 0x4,
+        VisualClassMask = 0x8,
+        VisualRedMaskMask = 0x10,
+        VisualGreenMaskMask = 0x20,
+        VisualBlueMaskMask = 0x40,
+        VisualColormapSizeMask = 0x80,
+        VisualBitsPerRGBMask = 0x100,
+        VisualAllMask = 0x1FF,
+)
+
 
 # float states
 floatStates = enum(
@@ -104,7 +96,7 @@ floatStates = enum(
         'MINIMIZED',
 )
 
-class _Window(command.CommandObject):
+class _Window(object):
     def __init__(self, window, qtile):
         self.window, self.qtile = window, qtile
         self.hidden = True
