@@ -484,7 +484,7 @@ class _Window(object):
             float_info = self._float_info
         )
 
-
+'''
 class Internal(_Window):
     """
         An internal window, that should not be managed by qtile.
@@ -509,8 +509,9 @@ class Internal(_Window):
 
     def __repr__(self):
         return "Internal(%s, %s)"%(self.name, self.window.wid)
-
-
+'''
+        
+'''
 class Static(_Window):
     """
         An internal window, that should not be managed by qtile.
@@ -553,7 +554,7 @@ class Static(_Window):
 
     def __repr__(self):
         return "Static(%s)"%self.name
-
+'''
 
 class Window(_Window):
     _windowMask = EventMask.StructureNotify |\
@@ -640,7 +641,7 @@ class Window(_Window):
                 self.disablefloating()
 
 
-    def static(self, screen, x=None, y=None, width=None, height=None):
+    '''def static(self, screen, x=None, y=None, width=None, height=None):
         """
             Makes this window a static window, attached to a Screen. If any of
             the arguments are left unspecified, the values given by the window
@@ -656,7 +657,7 @@ class Window(_Window):
         self.qtile.windowMap[self.window.wid] = s
         hook.fire("client_managed", s)
         return s
-
+    '''
 
     def tweak_float(self, x=None, y=None, dx=0, dy=0,
                     w=None, h=None, dw=0, dh=0):

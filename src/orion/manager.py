@@ -646,34 +646,6 @@ class Group(object):
         self.focus(nxt, True)
 
 
-class Log:
-    """
-        A circular log.
-    """
-    def __init__(self, length, outfile):
-        self.length, self.outfile = length, outfile
-        self.log = []
-
-    def add(self, itm):
-        if self.outfile:
-            print >> self.outfile, itm
-        self.log.append(itm)
-        if len(self.log) > self.length:
-            self.log.pop(0)
-
-    def write(self, fp, initial):
-        for i in self.log:
-            print >> fp, initial, i
-
-    def setLength(self, l):
-        self.length = l
-        if len(self.log) > l:
-            self.log = self.log[-l:]
-
-    def clear(self):
-        self.log = []
-
-
 class Orion(object):
     _exit = False
     def __init__(self, config, displayName=None, fname=None):
