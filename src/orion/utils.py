@@ -1,11 +1,27 @@
 from collections import OrderedDict
 
-def enum(*sequential, **named):
-    enums = dict(zip(sequential, range(len(sequential))), **named)
-    return type('Enum', (), enums)
-
-
-class flagEnum():
+class enum(object):
+    def __init__(self, *sequential, **named):
+        self.__enums = OrderedDict(zip(sequential, range(len(sequential))), **named)
+        for key, val in self.__enums.items():
+            setattr(self, key, val)
+    
+    def __getitem__(self, key):
+        return self.__enums[key]
+    
+    def items(self):
+        return self.__enums.items()
+    
+    def keys(self):
+        return self.__enums.keys()
+    
+    def values(self):
+        return self.__enums.values()
+    
+    def __iter__(self):
+        return self.__enums.__iter__()
+        
+class flagEnum(object):
     
     def __init__(self, *sequential):
         val = 1
@@ -51,7 +67,8 @@ def translateMasks(modifiers):
     masks = []
     for i in modifiers:
         try:
-            masks.append(xcbq.ModMasks[i])
+            raise # to jest do przenesienia gdzie indziej - petla importow z proto
+            #masks.append(proto.ModMasks[i])
         except KeyError:
             raise KeyError("Unknown modifier: %s"%i)
     return reduce(operator.or_, masks) if masks else 0

@@ -6,8 +6,9 @@ import struct
 import xcb.xproto, xcb.xinerama, xcb.randr, xcb.xcb
 from xcb.xproto import CW, WindowClass, EventMask
 import utils, xkeysyms
-from utils import flagEnum
 
+from orion.core.window import proto
+from orion.core.window import icccm
 
 # hack xcb.xproto for negative numbers
 def ConfigureWindow(self, window, value_mask, value_list):
@@ -23,102 +24,6 @@ xcb.xproto.xprotoExtension.ConfigureWindow = ConfigureWindow
 
 keysyms = xkeysyms.keysyms
 
-# These should be in xpyb:
-ModMasks = flagEnum (
-    'shift',
-    'lock',
-    'control',
-    'mod1',
-    'mod2',
-    'mod3',
-    'mod4',
-    'mod5',               
-)
-
-ButtonCodes = {
-    "Button1": 1,
-    "Button2": 2,
-    "Button3": 3,
-    "Button4": 4,
-    "Button5": 5,
-}
-AllButtonsMask = 0b11111 << 8
-ButtonMotionMask = 1 << 13
-ButtonReleaseMask = 1 << 3
-
-NormalHintsFlags = flagEnum (
-    'USPosition',               # User-specified x, y
-    'USSize',                   # User-specified width, height
-    'PPosition',                # Program-specified position
-    'PSize',                    # Program-specified size
-    'PMinSize',                 # Program-specified minimum size
-    'PMaxSize',                 # Program-specified maximum size
-    'PResizeInc',               # Program-specified resize increments
-    'PAspect',                  # Program-specified min and max aspect ratios
-    'PBaseSize',                # Program-specified base size
-    'PWinGravity',              # Program-specified window gravity
-)
-
-HintsFlags = flagEnum (
-    'InputHint',                # input
-    'StateHint',                # initial_state
-    'IconPixmapHint',           # icon_pixmap
-    'IconWindowHint',           # icon_window
-    'IconPositionHint',         # icon_x & icon_y
-    'IconMaskHint',             # icon_mask
-    'WindowGroupHint',          # window_group
-    'MessageHint',              # (this bit is obsolete)
-    'UrgencyHint',              # urgency
-)
-
-
-WindowTypes = {
-    '_NET_WM_WINDOW_TYPE_DESKTOP'       : "desktop",
-    '_NET_WM_WINDOW_TYPE_DOCK'          : "dock",
-    '_NET_WM_WINDOW_TYPE_TOOLBAR'       : "toolbar",
-    '_NET_WM_WINDOW_TYPE_MENU'          : "menu",
-    '_NET_WM_WINDOW_TYPE_UTILITY'       : "utility",
-    '_NET_WM_WINDOW_TYPE_SPLASH'        : "splash",
-    '_NET_WM_WINDOW_TYPE_DIALOG'        : "dialog",
-    '_NET_WM_WINDOW_TYPE_DROPDOWN_MENU' : "dropdown",
-    '_NET_WM_WINDOW_TYPE_POPUP_MENU'    : "menu",
-    '_NET_WM_WINDOW_TYPE_TOOLTIP'       : "tooltip",
-    '_NET_WM_WINDOW_TYPE_NOTIFICATION'  : "notification",
-    '_NET_WM_WINDOW_TYPE_COMBO'         : "combo",
-    '_NET_WM_WINDOW_TYPE_DND'           : "dnd",
-    '_NET_WM_WINDOW_TYPE_NORMAL'        : "normal",
-}
-
-WindowStates = {
-    None: 'normal',
-    '_NET_WM_STATE_FULLSCREEN': 'fullscreen',
-    }
-
-# Maps property names to types and formats.
-PropertyMap = {
-    # ewmh properties
-    "_NET_DESKTOP_GEOMETRY"     : ("CARDINAL",      32),
-    "_NET_SUPPORTED"            : ("ATOM",          32),
-    "_NET_SUPPORTING_WM_CHECK"  : ("WINDOW",        32),
-    "_NET_WM_NAME"              : ("UTF8_STRING",   8),
-    "_NET_WM_PID"               : ("CARDINAL",      32),
-    "_NET_CLIENT_LIST"          : ("WINDOW",        32),
-    "_NET_CLIENT_LIST_STACKING" : ("WINDOW",        32),
-    "_NET_NUMBER_OF_DESKTOPS"   : ("CARDINAL",      32),
-    "_NET_CURRENT_DESKTOP"      : ("CARDINAL",      32),
-    "_NET_DESKTOP_NAMES"        : ("UTF8_STRING",   8),
-    "_NET_WORKAREA"             : ("CARDINAL",      32),
-    "_NET_ACTIVE_WINDOW"        : ("WINDOW",        32),
-    "_NET_WM_STATE"             : ("ATOM",          32),
-    "_NET_WM_DESKTOP"           : ("CARDINAL",      32),
-    "_NET_WM_STRUT_PARTIAL"     : ("CARDINAL",      32),
-    "_NET_WM_WINDOW_OPACITY"    : ("CARDINAL",      32),
-    "_NET_WM_WINDOW_TYPE"       : ("CARDINAL",      32),
-    # ICCCM
-    "WM_STATE"                  : ("WM_STATE",      32),
-    # Qtile-specific properties
-    "QTILE_INTERNAL"            : ("CARDINAL",      32)
-}
 
 def toStr(s):
     return "".join([chr(i) for i in s.name])
@@ -168,7 +73,7 @@ class AtomCache:
         self.reverse = {}
 
         # We can change the pre-loads not to wait for a return
-        for name in WindowTypes.keys():
+        for name in proto.WindowTypes.keys():
             self.insert(name=name)
 
         for i in dir(xcb.xproto.Atom):
@@ -341,7 +246,7 @@ class Window:
             data = struct.pack("B" * len(r.value), *(list(r.value)))
             l = struct.unpack_from("=IIIIIIIII", data)
             flags = set()
-            for k, v in HintsFlags.items():
+            for k, v in proto.HintsFlags.items():
                 if l[0]&v:
                     flags.add(k)
             return dict(
@@ -362,7 +267,7 @@ class Window:
             data = struct.pack("B" * len(r.value), *(list(r.value)))
             l = struct.unpack_from("=IIIIIIIIIIIIII", data)
             flags = set()
-            for k, v in NormalHintsFlags.items():
+            for k, v in icccm.NormalHintsFlags.items():
                 if l[0]&v:
                     flags.add(k)
             return dict(
@@ -439,13 +344,13 @@ class Window:
         r = self.get_property('_NET_WM_WINDOW_TYPE', "ATOM", unpack='I')
         if r:
             name = self.conn.atoms.get_name(r[0])
-            return WindowTypes.get(name, name)
+            return proto.WindowTypes.get(name, name)
 
     def get_net_wm_state(self):
         r = self.get_property('_NET_WM_STATE', "ATOM", unpack='I')
         if r:
             name = self.conn.atoms.get_name(r[0])
-            return WindowStates.get(name, name)
+            return proto.WindowStates.get(name, name)
 
     def configure(self, **kwargs):
         """
@@ -464,10 +369,10 @@ class Window:
             type: String Atom name
             format: 8, 16, 32
         """
-        if name in PropertyMap:
+        if name in proto.PropertyMap:
             if type or format:
                 raise ValueError, "Over-riding default type or format for property."
-            type, format = PropertyMap[name]
+            type, format = proto.PropertyMap[name]
         else:
             if None in (type, format):
                 raise ValueError, "Must specify type and format for unknown property."
@@ -513,10 +418,10 @@ class Window:
             string to be used with the struct module.
         """
         if type is None:
-            if not prop in PropertyMap:
+            if not prop in proto.PropertyMap:
                 raise ValueError, "Must specify type for unknown property."
             else:
-                type, _ = PropertyMap[prop]
+                type, _ = proto.PropertyMap[prop]
         r = self.conn.conn.core.GetProperty(
             False, self.wid,
             self.conn.atoms[prop] if isinstance(prop, basestring) else prop,
@@ -709,7 +614,7 @@ class Connection:
     def refresh_modmap(self):
         q = self.conn.core.GetModifierMapping().reply()
         modmap = {}
-        mods = ModMasks.keys()
+        mods = proto.ModMasks.keys()
         for i, k in enumerate(q.keycodes):
             l = modmap.setdefault(mods[i/q.keycodes_per_modifier], [])
             l.append(k)

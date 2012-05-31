@@ -26,7 +26,6 @@ import xcb
 from xcb.xproto import EventMask
 import command, utils, window, hook
 
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -92,9 +91,9 @@ class Drag(object):
         self.modifiers = modifiers
         self.button = button
         self.commands = commands
-        if button not in xcbq.ButtonCodes:
+        if button not in window.proto.ButtonCodes:
             raise QtileError("Unknown button: %s" % button)
-        self.button_code = xcbq.ButtonCodes[self.button]
+        self.button_code = window.proto.ButtonCodes[self.button]
         try:
             self.modmask = utils.translateMasks(self.modifiers)
         except KeyError, v:
@@ -111,9 +110,9 @@ class Click(object):
         self.modifiers = modifiers
         self.button = button
         self.commands = commands
-        if button not in xcbq.ButtonCodes:
+        if button not in window.proto.ButtonCodes:
             raise QtileError("Unknown button: %s" % button)
-        self.button_code = xcbq.ButtonCodes[self.button]
+        self.button_code = window.proto.ButtonCodes[self.button]
         try:
             self.modmask = utils.translateMasks(self.modifiers)
         except KeyError, v:
@@ -466,7 +465,7 @@ class Group(command.CommandObject):
             if self.floating_layout.match(win):
                 # !!! tell it to float, can't set floating because it's too early
                 # so just set the flag underneath
-                win._float_state = window.FLOATING
+                win._float_state = window.floatStates.FLOATING
         except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
             pass  # doesn't matter
         if win.floating:
@@ -700,8 +699,8 @@ class Qtile(command.CommandObject):
 
         # Find the modifier mask for the numlock key, if there is one:
         nc = self.conn.keysym_to_keycode(xcbq.keysyms["Num_Lock"])
-        self.numlockMask = xcbq.ModMasks[self.conn.get_modifier(nc)]
-        self.validMask = ~(self.numlockMask | xcbq.ModMasks["lock"])
+        self.numlockMask = window.proto.ModMasks[self.conn.get_modifier(nc)]
+        self.validMask = ~(self.numlockMask | window.proto.ModMasks["lock"])
 
         # Because we only do Xinerama multi-screening, we can assume that the first
         # screen's root is _the_ root.
@@ -824,7 +823,7 @@ class Qtile(command.CommandObject):
             )
             self.root.grab_key(
                 code,
-                key.modmask | self.numlockMask | xcbq.ModMasks["lock"],
+                key.modmask | self.numlockMask | window.proto.ModMasks["lock"],
                 True,
                 xcb.xproto.GrabMode.Async,
                 xcb.xproto.GrabMode.Async,
@@ -846,7 +845,7 @@ class Qtile(command.CommandObject):
             )
             self.root.ungrab_key(
                 code,
-                key.modmask | self.numlockMask | xcbq.ModMasks["lock"]
+                key.modmask | self.numlockMask | window.proto.ModMasks["lock"]
             )
         del(self.keyMap[key_index])
 
@@ -903,7 +902,7 @@ class Qtile(command.CommandObject):
 
             if attrs and attrs.map_state == xcb.xproto.MapState.Unmapped:
                 continue
-            if state and state[0] == window.WithdrawnState:
+            if state and state[0] == window.wmState.WITHDRAWN:
                 continue
             self.manage(item)
 
@@ -913,7 +912,7 @@ class Qtile(command.CommandObject):
             hook.fire("client_killed", c)
             if getattr(c, "group", None):
                 c.window.unmap()
-                c.state = window.WithdrawnState
+                c.state = window.wmState.WITHDRAWN
                 c.group.remove(c)
             del self.windowMap[win]
 
@@ -976,7 +975,7 @@ class Qtile(command.CommandObject):
                     )
                 self.root.grab_button(
                     i.button_code,
-                    i.modmask | self.numlockMask | xcbq.ModMasks["lock"],
+                    i.modmask | self.numlockMask | window.proto.ModMasks["lock"],
                     True,
                     eventmask,
                     xcb.xproto.GrabMode.Async,
@@ -1202,14 +1201,14 @@ class Qtile(command.CommandObject):
             self._drag = x, y, val[0], val[1], m.commands
             self.root.grab_pointer(
                 True,
-                xcbq.ButtonMotionMask | xcbq.AllButtonsMask | xcbq.ButtonReleaseMask,
+                window.proto.ButtonMotionMask | window.proto.AllButtonsMask | window.proto.ButtonReleaseMask,
                 xcb.xproto.GrabMode.Async,
                 xcb.xproto.GrabMode.Async,
                 )
 
     def handle_ButtonRelease(self, e):
         button_code = e.detail
-        state = e.state & ~xcbq.AllButtonsMask
+        state = e.state & ~window.proto.AllButtonsMask
         if self.numlockMask:
             state = state | self.numlockMask
         m = self.mouseMap.get(button_code)

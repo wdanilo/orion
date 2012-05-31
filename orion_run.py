@@ -60,5 +60,4 @@ if __name__ == '__main__':
     
     # run orion
     from orion import main
-    print main
     main.run()
