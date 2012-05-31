@@ -46,7 +46,7 @@ def run():
             c = confreader.File(options.fallback)
         else:
             raise
-    q = manager.Qtile(c, fname=options.socket)
+    q = manager.Orion(c, fname=options.socket)
     q.debug = options.debug
     q.loop()
 

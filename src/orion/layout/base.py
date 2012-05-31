@@ -19,15 +19,14 @@
 # SOFTWARE.
 
 import copy
-from .. import command, manager
+from .. import manager
 
-class Layout(command.CommandObject):
+class Layout(object):
     """
         This class defines the API that should be exposed by all layouts.
     """
     defaults = manager.Defaults()
     def __init__(self, **config):
-        command.CommandObject.__init__(self)
         self.defaults.load(self, config)
 
     def layout(self, windows, screen):

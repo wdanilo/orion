@@ -24,7 +24,8 @@ import sys, struct, contextlib
 #import xcb.xcb
 from xcb.xproto import EventMask, StackMode, SetMode
 import xcb.xproto
-import command, utils
+import utils
+#import command
 import hook
 
 from utils import flagEnum, enum

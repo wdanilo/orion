@@ -24,7 +24,9 @@ import xcbq
 import xcb.xproto, xcb.xinerama
 import xcb
 from xcb.xproto import EventMask
-import command, utils, window, hook
+import utils, window, hook
+from orion.core import comm
+#import command
 
 import logging
 logger = logging.getLogger(__name__)
@@ -147,7 +149,8 @@ class ScreenRect(object):
                 self.__class__(self.x, self.y + rowheight,
                                self.width, self.height - rowheight))
 
-class Screen(command.CommandObject):
+#command.CommandObject
+class Screen(object):
     """
         A physical screen, and its associated paraphernalia.
     """
@@ -302,7 +305,8 @@ class Screen(command.CommandObject):
         self.resize(x, y, w, h)
 
 
-class Group(command.CommandObject):
+# command.CommandObject
+class Group(object):
     """
         A group is a container for a bunch of windows, analogous to workspaces
         in other window managers. Each client window managed by the window
@@ -670,7 +674,7 @@ class Log:
         self.log = []
 
 
-class Qtile(command.CommandObject):
+class Orion(object):
     _exit = False
     def __init__(self, config, displayName=None, fname=None):
         if not displayName:
@@ -684,7 +688,7 @@ class Qtile(command.CommandObject):
             displayNum = displayName.partition(":")[2]
             if not "." in displayNum:
                 displayName = displayName + ".0"
-            fname = command.find_sockfile(displayName)
+            fname = comm.find_sockfile(displayName)
 
         self.conn = xcbq.Connection(displayName)
         self.config, self.fname = config, fname
