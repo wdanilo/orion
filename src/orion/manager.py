@@ -875,15 +875,6 @@ class Qtile(command.CommandObject):
             del(self.groupMap[name])
             hook.fire("delgroup")
 
-    def registerWidget(self, w):
-        """
-            Register a bar widget. If a widget with the same name already
-            exists, this raises a ConfigError.
-        """
-        if w.name:
-            if self.widgetMap.has_key(w.name):
-                return
-            self.widgetMap[w.name] = w
 
     @utils.LRUCache(200)
     def colorPixel(self, name):
@@ -934,7 +925,7 @@ class Qtile(command.CommandObject):
             return
         if attrs and attrs.override_redirect:
             return
-
+        
         if not w.wid in self.windowMap:
             if internal:
                 try:

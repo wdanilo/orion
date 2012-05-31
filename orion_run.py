@@ -59,6 +59,6 @@ if __name__ == '__main__':
     sys.path.append(os.path.join(installdir,'src'))
     
     # run orion
-    import orion
-    print orion
-    orion.run()
+    from orion import main
+    print main
+    main.run()
