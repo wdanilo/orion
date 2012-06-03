@@ -621,7 +621,7 @@ class Orion(object):
         if c:
             hook.fire("client_killed", c)
             if getattr(c, "group", None):
-                c.window.unmap()
+                c.unmap()
                 c.state = window.wmState.WITHDRAWN
                 c.group.remove(c)
             del self.windowMap[win]

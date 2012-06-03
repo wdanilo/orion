@@ -63,13 +63,13 @@ AttributeMasks = MaskMap(CW)
 GCMasks = MaskMap(xcb.xproto.GC)
 
 class _BaseWindow(object):
-    def __init__(self, window, qtile):
-        self.window, self.qtile = window, qtile
+    def __init__(self, qtile):
+        self.qtile = qtile
         self.hidden = True
         self.group = None
-        window.set_attribute(eventmask=self._windowMask)
+        self.set_attribute(eventmask=self._windowMask)
         try:
-            g = self.window.get_geometry()
+            g = self.get_geometry()
             self._x, self._y, self._width, self._height = g.x, g.y, g.width, g.height
             # note that _float_info x and y are
             # really offsets, relative to screen x,y
@@ -110,7 +110,7 @@ class _BaseWindow(object):
 
     def updateName(self):
         try:
-            self.name = self.window.get_name()
+            self.name = self.get_name()
         except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
             return
         hook.fire("window_name_change")
@@ -121,8 +121,8 @@ class _BaseWindow(object):
             http://tronche.com/gui/x/icccm/sec-4.html#WM_HINTS
         """
         try:
-            h = self.window.get_wm_hints()
-            normh = self.window.get_wm_normal_hints()
+            h = self.get_wm_hints()
+            normh = self.get_wm_normal_hints()
         except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
             return
 
@@ -170,7 +170,7 @@ class _BaseWindow(object):
         return
 
     def updateState(self):
-        self.fullscreen = self.window.get_net_wm_state() == 'fullscreen'
+        self.fullscreen = self.get_net_wm_state() == 'fullscreen'
 
     @property
     def urgent(self):
@@ -188,7 +188,7 @@ class _BaseWindow(object):
             width = self.width,
             height = self.height,
             group = group,
-            id = self.window.wid,
+            id = self.wid,
             floating = self._float_state != floatStates.NOT_FLOATING,
             float_info = self._float_info,
             maximized = self._float_state == floatStates.MAXIMIZED,
@@ -199,22 +199,22 @@ class _BaseWindow(object):
 
     @property
     def state(self):
-        return self.window.get_wm_state()[0]
+        return self.get_wm_state()[0]
 
     @state.setter
     def state(self, val):
         if val in (wmState.WITHDRAWN, wmState.NORMAL, wmState.ICONIC):
-            self.window.set_property('WM_STATE', [val, 0])
+            self.set_property('WM_STATE', [val, 0])
 
     def setOpacity(self, opacity):
         if 0.0 <= opacity <= 1.0:
             real_opacity = int(opacity * 0xffffffff)
-            self.window.set_property('_NET_WM_WINDOW_OPACITY', real_opacity)
+            self.set_property('_NET_WM_WINDOW_OPACITY', real_opacity)
         else:
             return
 
     def getOpacity(self):
-        opacity = self.window.get_property("_NET_WM_WINDOW_OPACITY", unpack="I")
+        opacity = self.get_property("_NET_WM_WINDOW_OPACITY", unpack="I")
         if not opacity:
             return 1.0
         else:
@@ -228,7 +228,7 @@ class _BaseWindow(object):
     opacity = property(getOpacity, setOpacity)
 
     def kill(self):
-        if "WM_DELETE_WINDOW" in self.window.get_wm_protocols():
+        if "WM_DELETE_WINDOW" in self.get_wm_protocols():
             #e = event.ClientMessage(
             #        window = self.window,
             #        client_type = self.qtile.display.intern_atom("WM_PROTOCOLS"),
@@ -249,7 +249,7 @@ class _BaseWindow(object):
                 33, # ClientMessageEvent
                 32, # Format
                 0,
-                self.window.wid,
+                self.wid,
                 self.qtile.conn.atoms["WM_PROTOCOLS"],
                 self.qtile.conn.atoms["WM_DELETE_WINDOW"],
                 xcb.xproto.Time.CurrentTime,
@@ -258,18 +258,18 @@ class _BaseWindow(object):
                 0,
             ]
             e = struct.pack('BBHII5I', *vals)
-            self.window.send_event(e)
+            self.send_event(e)
         else:
-            self.window.kill_client()
+            self.kill_client()
 
     def hide(self):
         # We don't want to get the UnmapNotify for this unmap
         with self.disableMask(xcb.xproto.EventMask.StructureNotify):
-            self.window.unmap()
+            self.unmap()
         self.hidden = True
 
     def unhide(self):
-        self.window.map()
+        self.map()
         self.state = wmState.NORMAL
         self.hidden = False
 
@@ -280,12 +280,12 @@ class _BaseWindow(object):
         self._resetMask()
 
     def _disableMask(self, mask):
-        self.window.set_attribute(
+        self.set_attribute(
             eventmask=self._windowMask&(~mask)
         )
 
     def _resetMask(self):
-        self.window.set_attribute(
+        self.set_attribute(
             eventmask=self._windowMask
         )
 
@@ -345,21 +345,21 @@ class _BaseWindow(object):
         # windows
         if twice:
             kwarg['y'] -= 1
-            self.window.configure(**kwarg)
+            self.configure(**kwarg)
             kwarg['y'] += 1
-        self.window.configure(**kwarg)
+        self.configure(**kwarg)
 
         if bordercolor is not None:
-            self.window.set_attribute(
+            self.set_attribute(
                 borderpixel = bordercolor
             )
 
     def focus(self, warp):
         if not self.hidden and self.hints['input']:
-            self.window.set_input_focus()
+            self.set_input_focus()
             try:
                 if warp and self.qtile.config.cursor_warp:
-                    self.window.warp_pointer(self.width//2, self.height//2)
+                    self.warp_pointer(self.width//2, self.height//2)
             except AttributeError:
                 pass
         hook.fire("client_focus", self)
@@ -380,7 +380,7 @@ class _BaseWindow(object):
         """
             Tells you more than you ever wanted to know about a window.
         """
-        a = self.window.get_attributes()
+        a = self.get_attributes()
         attrs = {
             "backing_store": a.backing_store,
             "visual": a.visual,
@@ -398,26 +398,26 @@ class _BaseWindow(object):
             "your_event_mask": a.your_event_mask,
             "do_not_propagate_mask": a.do_not_propagate_mask
         }
-        props = self.window.list_properties()
-        normalhints = self.window.get_wm_normal_hints()
-        hints = self.window.get_wm_hints()
+        props = self.list_properties()
+        normalhints = self.get_wm_normal_hints()
+        hints = self.get_wm_hints()
         protocols = []
-        for i in self.window.get_wm_protocols():
+        for i in self.get_wm_protocols():
             protocols.append(i)
 
-        state = self.window.get_wm_state()
+        state = self.get_wm_state()
 
         return dict(
             attributes=attrs,
             properties=props,
-            name = self.window.get_name(),
-            wm_class = self.window.get_wm_class(),
-            wm_window_role = self.window.get_wm_window_role(),
-            wm_type = self.window.get_wm_type(),
-            wm_transient_for = self.window.get_wm_transient_for(),
+            name = self.get_name(),
+            wm_class = self.get_wm_class(),
+            wm_window_role = self.get_wm_window_role(),
+            wm_type = self.get_wm_type(),
+            wm_transient_for = self.get_wm_transient_for(),
             protocols = protocols,
-            wm_icon_name = self.window.get_wm_icon_name(),
-            wm_client_machine = self.window.get_wm_client_machine(),
+            wm_icon_name = self.get_wm_icon_name(),
+            wm_client_machine = self.get_wm_client_machine(),
             normalhints = normalhints,
             hints = hints,
             state = state,
@@ -432,11 +432,11 @@ class Window(_BaseWindow):
                   EventMask.FocusChange
     
     def xxx(self,qtile):
-        _BaseWindow.__init__(self, self, qtile)
+        _BaseWindow.__init__(self, qtile)
         self.updateName()
 
         # add window to the save-set, so it gets mapped when qtile dies
-        qtile.conn.conn.core.ChangeSaveSet(SetMode.Insert, self.window.wid)
+        qtile.conn.conn.core.ChangeSaveSet(SetMode.Insert, self.wid)
     
     def __init__(self, conn, wid, qtile):
         self.qtile = qtile
