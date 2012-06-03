@@ -1,6 +1,28 @@
 from orion import hook
 from orion import utils
 
+
+
+class Colormap:
+    def __init__(self, conn, cid):
+        self.conn, self.cid = conn, cid
+
+    def alloc_color(self, color):
+        """
+            Flexible color allocation.
+        """
+        if color.startswith("#"):
+            if len(color) != 7:
+                raise ValueError("Invalid color: %s"%color)
+            def x8to16(i):
+                return 0xffff * (i&0xff)/0xff
+            r = x8to16(int(color[1] + color[2], 16))
+            g = x8to16(int(color[3] + color[4], 16))
+            b = x8to16(int(color[5] + color[6], 16))
+            return self.conn.conn.core.AllocColor(self.cid, r, g, b).reply()
+        else:
+            return self.conn.conn.core.AllocNamedColor(self.cid, len(color), color).reply()
+        
 class ScreenRect(object):
 
     def __init__(self, x, y, width, height):
@@ -32,8 +54,7 @@ class Screen(object):
         A physical screen, and its associated paraphernalia.
     """
     group = None
-    def __init__(self, top=None, bottom=None, left=None, right=None,
-                 x=None, y=None, width=None, height=None):
+    def __init__(self, x=None, y=None, width=None, height=None):
         """
             - top, bottom, left, right: Instances of bar objects, or None.
 
@@ -43,8 +64,10 @@ class Screen(object):
             x,y,width and height aren't specified usually unless you are
             using 'fake screens'.
         """
-        self.top, self.bottom = top, bottom
-        self.left, self.right = left, right
+#        self.top, self.bottom = top, bottom
+#        self.left, self.right = left, right
+        self.top, self.bottom = None, None
+        self.left, self.right = None, None
         self.qtile = None
         self.index = None
         self.x = x # x position of upper left corner can be > 0 if one screen is "right" of the other

@@ -8,6 +8,7 @@ from xcb.xproto import EventMask
 import utils, window, hook
 from orion.core import comm
 from orion.core.screen import Screen
+from orion.core.comm.connection import Connection
 #import command
 
 import logging
@@ -378,7 +379,7 @@ class Orion(object):
         self.fname = fname
         '''
             
-        self.conn = xcbq.Connection(displayName)
+        self.conn = Connection(displayName)
         self.config = config
         hook.init(self)
 
@@ -462,6 +463,20 @@ class Orion(object):
 
 
     def _process_screens(self):
+        for screen in self.conn.pseudoscreens:
+            self.screens.append(screen)
+        if not self.screens:
+            s = Screen()
+            self.currentScreen = s
+            s._configure(
+                self,
+                0, 0, 0,
+                self.conn.default_screen.width_in_pixels,
+                self.conn.default_screen.height_in_pixels,
+                self.groups[0],
+            )
+            self.screens.append(s)
+        '''
         for i, s in enumerate(self.conn.pseudoscreens):
             if i+1 > len(self.config.screens):
                 scr = Screen()
@@ -494,7 +509,8 @@ class Orion(object):
                 self.groups[0],
             )
             self.screens.append(s)
-
+        '''
+            
     def mapKey(self, key):
         self.keyMap[(key.keysym, key.modmask&self.validMask)] = key
         code = self.conn.keysym_to_keycode(key.keysym)
