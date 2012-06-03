@@ -142,31 +142,6 @@ class _Window(object):
             }
         self.updateHints()
 
-    '''
-    def _geometry_getter(self, attr):
-        def get_attr(self):
-            if getattr(self, "_" + attr) is None:
-                g = self.window.get_geometry()
-                self._x, self._y, self._width, self._height = g.x, g.y, g.width, g.height
-                # note that _float_info x and y are
-                # really offsets, relative to screen x,y
-                self._float_info = {
-                    'x': g.x, 'y': g.y,
-                    'w': g.width, 'h': g.height
-                }
-
-            return getattr(self, "_" + attr)
-        return get_attr
-
-    def _geometry_setter(self, attr):
-        return lambda self, value: setattr(self, "_" + attr, value)
-        
-    x = property(fset=_geometry_setter("x"), fget=_geometry_getter("x"))
-    y = property(fset=_geometry_setter("y"), fget=_geometry_getter("y"))
-    width = property(fset=_geometry_setter("width"), fget=_geometry_getter("width"))
-    height = property(fset=_geometry_setter("height"), fget=_geometry_getter("height"))
-    _float_info = property(fset=_geometry_setter("_float_info"), fget=_geometry_getter("_float_info"))
-    '''
 
     def updateName(self):
         try:
@@ -484,78 +459,6 @@ class _Window(object):
             float_info = self._float_info
         )
 
-'''
-class Internal(_Window):
-    """
-        An internal window, that should not be managed by qtile.
-    """
-    _windowMask = EventMask.StructureNotify |\
-                  EventMask.PropertyChange |\
-                  EventMask.EnterWindow |\
-                  EventMask.FocusChange |\
-                  EventMask.Exposure |\
-                  EventMask.ButtonPress |\
-                  EventMask.KeyPress
-    @classmethod
-    def create(klass, qtile, x, y, width, height, opacity=1.0):
-        win = qtile.conn.create_window(
-                    x, y, width, height
-              )
-        win.set_property("QTILE_INTERNAL", 1)
-        i = Internal(win, qtile)
-        i.place(x, y, width, height, 0, None)
-        i.opacity = opacity
-        return i
-
-    def __repr__(self):
-        return "Internal(%s, %s)"%(self.name, self.window.wid)
-'''
-        
-'''
-class Static(_Window):
-    """
-        An internal window, that should not be managed by qtile.
-    """
-    _windowMask = EventMask.StructureNotify |\
-                  EventMask.PropertyChange |\
-                  EventMask.EnterWindow |\
-                  EventMask.FocusChange |\
-                  EventMask.Exposure
-    def __init__(self, win, qtile, screen, x=None, y=None, width=None, height=None):
-        _Window.__init__(self, win, qtile)
-        self.updateName()
-        self.conf_x, self.conf_y = x, y
-        self.conf_width, self.conf_height = width, height
-        self.x, self.y, self.width, self.height = x or 0, y or 0, width or 0, height or 0
-        self.screen = screen
-        if None not in (x, y, width, height):
-            self.place(x, y, width, height, 0, 0)
-
-    def handle_ConfigureRequest(self, e):
-        cw = xcb.xproto.ConfigWindow
-        if self.conf_x is None and e.value_mask & cw.X:
-            self.x = e.x
-        if self.conf_y is None and e.value_mask & cw.Y:
-            self.y = e.y
-        if self.conf_width is None and e.value_mask & cw.Width:
-            self.width = e.width
-        if self.conf_height is None and e.value_mask & cw.Height:
-            self.height = e.height
-
-        self.place(
-            self.screen.x + self.x,
-            self.screen.y + self.y,
-            self.width,
-            self.height,
-            self.borderwidth,
-            self.bordercolor
-        )
-        return False
-
-    def __repr__(self):
-        return "Static(%s)"%self.name
-'''
-
 class Window(_Window):
     _windowMask = EventMask.StructureNotify |\
                   EventMask.PropertyChange |\
@@ -563,32 +466,14 @@ class Window(_Window):
                   EventMask.FocusChange
     # Set when this object is being retired.
     defunct = False
-    _group = None
 
     def __init__(self, window, qtile):
         _Window.__init__(self, window, qtile)
         self.updateName()
-        # add to group by position according to _NET_WM_DESKTOP property
-        index = window.get_wm_desktop()
-        if index and index < len(qtile.groups):
-            group = qtile.groups[index]
-            group.add(self)
-            if group != qtile.currentScreen.group:
-                self.hide()
 
         # add window to the save-set, so it gets mapped when qtile dies
         qtile.conn.conn.core.ChangeSaveSet(SetMode.Insert, self.window.wid)
 
-    @property
-    def group(self):
-        return self._group
-
-    @group.setter
-    def group(self, group):
-        if group:
-            self.window.set_property("_NET_WM_DESKTOP",
-                self.qtile.groups.index(group))
-        self._group = group
 
     @property
     def floating(self):
@@ -782,24 +667,6 @@ class Window(_Window):
             self.group.mark_floating(self, False)
             hook.fire('float_change')
 
-    def togroup(self, groupName):
-        """
-            Move window to a specified group.
-        """
-        group = self.qtile.groupMap.get(groupName)
-        if group is None:
-            raise command.CommandError("No such group: %s"%groupName)
-        if self.group is not group:
-            self.hide()
-            if self.group:
-                if self.group.screen:
-                    # for floats remove window offset
-                    self.x -= self.group.screen.x
-                self.group.remove(self)
-
-            if group.screen:
-                self.x += group.screen.x
-            group.add(self)
 
     def match(self, wname=None, wmclass=None, role=None):
         """

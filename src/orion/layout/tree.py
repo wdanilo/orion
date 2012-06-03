@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from base import SingleWindow
-from .. import manager
 from .. import window
 from .. import drawer
 from .. import hook
+from defaults import Defaults
 
 to_superscript = dict(zip(map(ord, u'0123456789'), map(ord, u'⁰¹²³⁴⁵⁶⁷⁸⁹')))
 
@@ -212,7 +212,7 @@ class TreeTab(SingleWindow):
     too.
     """
 
-    defaults = manager.Defaults(
+    defaults = Defaults(
         ("bg_color", "000000", "Background color of tabs"),
         ("active_bg", "000080", "Background color of active tab"),
         ("active_fg", "ffffff", "Foreground color of active tab"),

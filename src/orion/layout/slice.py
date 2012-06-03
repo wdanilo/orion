@@ -5,8 +5,7 @@ Slice layout. Serves as example of delegating layouts (or sublayouts)
 
 from base import Layout, SingleWindow, Delegate
 from max import Max
-from .. import manager
-
+from defaults import Defaults
 
 class Single(SingleWindow):
     """Layout with single window
@@ -44,7 +43,7 @@ class Slice(Delegate):
     and delegates other window placement to other layout
     """
 
-    defaults = manager.Defaults(
+    defaults = Defaults(
         ("width", 256, "Slice width"),
         ("side", "left", "Side of the slice (left, right, top, bottom)"),
         ("name", "max", "Name of this layout."),

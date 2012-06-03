@@ -1,4 +1,5 @@
-from orion.manager import Screen, Group
+from orion.manager import Group
+from orion.core.screen import Screen
 from orion import layout
 
 keys = []
@@ -8,7 +9,7 @@ groups = [
 ]
 
 layouts = [
-    layout.Max(),
+    #layout.Max(),
     layout.Stack(stacks=2)
 ]
 

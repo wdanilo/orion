@@ -19,13 +19,13 @@
 # SOFTWARE.
 
 import copy
-from .. import manager
+from defaults import Defaults
 
 class Layout(object):
     """
         This class defines the API that should be exposed by all layouts.
     """
-    defaults = manager.Defaults()
+    defaults = Defaults()
     def __init__(self, **config):
         self.defaults.load(self, config)
 

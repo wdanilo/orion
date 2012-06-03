@@ -1,22 +1,3 @@
-# Copyright (c) 2008, Aldo Cortesi. All rights reserved.
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
 import atexit, datetime, subprocess, sys, os, traceback
 import select, contextlib
 import gobject
@@ -26,6 +7,7 @@ import xcb
 from xcb.xproto import EventMask
 import utils, window, hook
 from orion.core import comm
+from orion.core.screen import Screen
 #import command
 
 import logging
@@ -34,275 +16,6 @@ logger = logging.getLogger(__name__)
 
 class QtileError(Exception): pass
 
-
-class Defaults:
-    def __init__(self, *defaults):
-        """
-            defaults: A list of (name, value, description) tuples.
-        """
-        self.defaults = defaults
-
-    def load(self, target, config):
-        """
-            Loads a dict of attributes, using specified defaults, onto target.
-        """
-        for i in self.defaults:
-            val = config.get(i[0], i[1])
-            setattr(target, i[0], val)
-
-
-class Key:
-    """
-        Defines a keybinding.
-    """
-    def __init__(self, modifiers, key, *commands):
-        """
-            - modifiers: A list of modifier specifications. Modifier
-            specifications are one of: "shift", "lock", "control", "mod1",
-            "mod2", "mod3", "mod4", "mod5".
-
-            - key: A key specification, e.g. "a", "Tab", "Return", "space".
-
-            - *commands: A list of lazy command objects generated with the
-            command.lazy helper. If multiple Call objects are specified, they
-            are run in sequence.
-        """
-        self.modifiers, self.key, self.commands = modifiers, key, commands
-        if key not in xcbq.keysyms:
-            raise QtileError("Unknown key: %s"%key)
-        self.keysym = xcbq.keysyms[key]
-        try:
-            self.modmask = utils.translateMasks(self.modifiers)
-        except KeyError, v:
-            raise QtileError(v)
-
-    def __repr__(self):
-        return "Key(%s, %s)"%(self.modifiers, self.key)
-
-class Drag(object):
-    """
-        Defines binding of a mouse to some dragging action
-
-        On each motion event command is executed with two extra parameters added
-        x and y offset from previous move
-    """
-    def __init__(self, modifiers, button, *commands, **kw):
-        self.start = kw.pop('start', None)
-        if kw:
-            raise TypeError("Unexpected arguments: %s" % ', '.join(kw))
-        self.modifiers = modifiers
-        self.button = button
-        self.commands = commands
-        if button not in window.proto.ButtonCodes:
-            raise QtileError("Unknown button: %s" % button)
-        self.button_code = window.proto.ButtonCodes[self.button]
-        try:
-            self.modmask = utils.translateMasks(self.modifiers)
-        except KeyError, v:
-            raise QtileError(v)
-
-    def __repr__(self):
-        return "Drag(%s, %s)"%(self.modifiers, self.button)
-
-class Click(object):
-    """
-        Defines binding of a mouse click
-    """
-    def __init__(self, modifiers, button, *commands):
-        self.modifiers = modifiers
-        self.button = button
-        self.commands = commands
-        if button not in window.proto.ButtonCodes:
-            raise QtileError("Unknown button: %s" % button)
-        self.button_code = window.proto.ButtonCodes[self.button]
-        try:
-            self.modmask = utils.translateMasks(self.modifiers)
-        except KeyError, v:
-            raise QtileError(v)
-
-    def __repr__(self):
-        return "Click(%s, %s)"%(self.modifiers, self.button)
-
-class ScreenRect(object):
-
-    def __init__(self, x, y, width, height):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-
-    def __repr__(self):
-        return '<%s %d,%d %d,%d>' % (self.__class__.__name__,
-            self.x, self.y, self.width, self.height)
-
-    def hsplit(self, columnwidth):
-        assert columnwidth > 0
-        assert columnwidth < self.width
-        return (self.__class__(self.x, self.y, columnwidth, self.height),
-                self.__class__(self.x+columnwidth, self.y,
-                               self.width - columnwidth, self.height))
-
-    def vsplit(self, rowheight):
-        assert rowheight > 0
-        assert rowheight < self.height
-        return (self.__class__(self.x, self.y, self.width, rowheight),
-                self.__class__(self.x, self.y + rowheight,
-                               self.width, self.height - rowheight))
-
-#command.CommandObject
-class Screen(object):
-    """
-        A physical screen, and its associated paraphernalia.
-    """
-    group = None
-    def __init__(self, top=None, bottom=None, left=None, right=None,
-                 x=None, y=None, width=None, height=None):
-        """
-            - top, bottom, left, right: Instances of bar objects, or None.
-
-            Note that bar.Bar objects can only be placed at the top or the
-            bottom of the screen (bar.Gap objects can be placed anywhere).
-
-            x,y,width and height aren't specified usually unless you are
-            using 'fake screens'.
-        """
-        self.top, self.bottom = top, bottom
-        self.left, self.right = left, right
-        self.qtile = None
-        self.index = None
-        self.x = x # x position of upper left corner can be > 0
-                      # if one screen is "right" of the other
-        self.y = y
-        self.width = width
-        self.height = height
-
-
-    def _configure(self, qtile, index, x, y, width, height, group):
-        self.qtile = qtile
-        self.index, self.x, self.y = index, x, y,
-        self.width, self.height = width, height
-        self.setGroup(group)
-        for i in self.gaps:
-            i._configure(qtile, self)
-
-    @property
-    def gaps(self):
-        lst = []
-        for i in [self.top, self.bottom, self.left, self.right]:
-            if i:
-                lst.append(i)
-        return lst
-
-    @property
-    def dx(self):
-        return self.x + self.left.size if self.left else self.x
-
-    @property
-    def dy(self):
-        return self.y + self.top.size if self.top else self.y
-
-    @property
-    def dwidth(self):
-        val = self.width
-        if self.left:
-            val -= self.left.size
-        if self.right:
-            val -= self.right.size
-        return val
-
-    @property
-    def dheight(self):
-        val = self.height
-        if self.top:
-            val -= self.top.size
-        if self.bottom:
-            val -= self.bottom.size
-        return val
-
-    def get_rect(self):
-        return ScreenRect(self.dx, self.dy, self.dwidth, self.dheight)
-
-    def setGroup(self, new_group):
-        """
-        Put group on this screen
-        """
-        if new_group.screen == self:
-            return
-        elif new_group.screen:
-            # g1 <-> s1 (self)
-            # g2 (new_group)<-> s2 to
-            # g1 <-> s2
-            # g2 <-> s1
-            g1 = self.group
-            s1 = self
-            g2 = new_group
-            s2 = new_group.screen
-
-            s2.group = g1
-            g1._setScreen(s2)
-            s1.group = g2
-            g2._setScreen(s1)
-        else:
-            if self.group is not None:
-                self.group._setScreen(None)
-            self.group = new_group
-            new_group._setScreen(self)
-        hook.fire("setgroup")
-        hook.fire("focus_change")
-        hook.fire("layout_change", self.group.layouts[self.group.currentLayout])
-
-    def _items(self, name):
-        if name == "layout":
-            return True, range(len(self.group.layouts))
-        elif name == "window":
-            return True, [i.window.wid for i in self.group.windows]
-        elif name == "bar":
-            return False, [x.position for x in self.gaps]
-
-    def _select(self, name, sel):
-        if name == "layout":
-            if sel is None:
-                return self.group.layout
-            else:
-                return utils.lget(self.group.layouts, sel)
-        elif name == "window":
-            if sel is None:
-                return self.group.currentWindow
-            else:
-                for i in self.group.windows:
-                    if i.window.wid == sel:
-                        return i
-        elif name == "bar":
-            return getattr(self, sel)
-
-    def resize(self, x=None, y=None, w=None, h=None):
-        x = x or self.x
-        y = y or self.y
-        w = w or self.width
-        h = h or self.height
-        self._configure(self.qtile, self.index, x, y, w, h, self.group)
-        for bar in [self.top, self.bottom, self.left, self.right]:
-            if bar:
-                bar.draw()
-        self.group.layoutAll()
-
-    def cmd_info(self):
-        """
-            Returns a dictionary of info for this screen.
-        """
-        return dict(
-            index=self.index,
-            width=self.width,
-            height=self.height,
-            x = self.x,
-            y = self.y
-        )
-
-    def cmd_resize(self, x=None, y=None, w=None, h=None):
-        """
-            Resize the screen.
-        """
-        self.resize(x, y, w, h)
 
 
 # command.CommandObject
@@ -654,6 +367,7 @@ class Orion(object):
             if not displayName:
                 raise QtileError("No DISPLAY set.")
 
+        '''
         if not fname:
             # Dots might appear in the host part of the display name
             # during remote X sessions. Let's strip the host part first.
@@ -661,9 +375,11 @@ class Orion(object):
             if not "." in displayNum:
                 displayName = displayName + ".0"
             fname = comm.find_sockfile(displayName)
-
+        self.fname = fname
+        '''
+            
         self.conn = xcbq.Connection(displayName)
-        self.config, self.fname = config, fname
+        self.config = config
         hook.init(self)
 
         self.keyMap = {}
@@ -676,6 +392,8 @@ class Orion(object):
         # Find the modifier mask for the numlock key, if there is one:
         nc = self.conn.keysym_to_keycode(xcbq.keysyms["Num_Lock"])
         self.numlockMask = window.proto.ModMasks[self.conn.get_modifier(nc)]
+        print self.numlockMask
+        wlasnie sprawdzam co po kolei sie tu dizeje i porzadkuje
         self.validMask = ~(self.numlockMask | window.proto.ModMasks["lock"])
 
         # Because we only do Xinerama multi-screening, we can assume that the first

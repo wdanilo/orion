@@ -2,3 +2,5 @@ eclipse.preferences.version=1
 encoding//egg_devel/orion.core/setup.py=iso-8859-1
 encoding//egg_devel/orion.example/setup.py=iso-8859-1
 encoding//src/orion/confreader.py=utf-8
+encoding//src/orion/layout/slice.py=utf-8
+encoding//src/orion/layout/tree.py=utf-8

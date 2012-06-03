@@ -1,8 +1,9 @@
 from base import Layout
-from .. import utils, manager
+from .. import utils
+from defaults import Defaults
 
 class Tile(Layout):
-    defaults = manager.Defaults(
+    defaults = Defaults(
         ("border_focus", "#0000ff", "Border colour for the focused window."),
         ("border_normal", "#000000", "Border colour for un-focused winows."),
         ("border_width", 1, "Border width."),

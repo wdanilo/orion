@@ -1,8 +1,8 @@
 import math
 
 from base import Layout
-from .. import utils, manager
-
+from .. import utils
+from defaults import Defaults
 
 ROWCOL = 1 # do rows at a time left to right top down
 COLROW = 2 # do cols top to bottom, left to right
@@ -176,7 +176,7 @@ class RatioTile(Layout):
     """
     Tries to tile all windows in the width/height ratio passed in
     """
-    defaults = manager.Defaults(
+    defaults = Defaults(
         ("border_focus", "#0000ff", "Border colour for the focused window."),
         ("border_normal", "#000000", "Border colour for un-focused winows."),
         ("border_width", 1, "Border width."),

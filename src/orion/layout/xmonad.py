@@ -1,5 +1,5 @@
 from base import SingleWindow
-from .. import manager
+from defaults import Defaults
 
 class MonadTall(SingleWindow):
     """
@@ -100,7 +100,7 @@ class MonadTall(SingleWindow):
     _med_ratio = .5
     _max_ratio = .75
 
-    defaults = manager.Defaults(
+    defaults = Defaults(
         ("border_focus", "#ff0000", "Border colour for the focused window."),
         ("border_normal", "#000000", "Border colour for un-focused winows."),
         ("border_width", 2, "Border width."),

@@ -1,5 +1,6 @@
 from base import Layout
-from .. import manager, window
+from .. import window
+from defaults import Defaults
 
 FLOAT_WM_TYPES = { 'utility':1,
                    'notification':1,
@@ -10,7 +11,7 @@ class Floating(Layout):
     """
         Floating layout, which does nothing with windows but handles focus order
     """
-    defaults = manager.Defaults(
+    defaults = Defaults(
         ("border_focus", "#0000ff", "Border colour for the focused window."),
         ("border_normal", "#000000", "Border colour for un-focused winows."),
         ("border_width", 1, "Border width."),

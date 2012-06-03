@@ -18,7 +18,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from base import Layout
-from .. import utils, manager
+from .. import utils
+from defaults import Defaults
 
 
 class _WinStack(object):
@@ -125,7 +126,7 @@ class Stack(Layout):
         stack, or unsplit it to show only the current window. At the moment,
         this is the most mature and flexible layout in Qtile.
     """
-    defaults = manager.Defaults(
+    defaults = Defaults(
         ("border_focus", "#0000ff", "Border colour for the focused window."),
         ("border_normal", "#000000", "Border colour for un-focused winows."),
         ("border_width", 1, "Border width."),
