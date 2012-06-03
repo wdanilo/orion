@@ -125,8 +125,7 @@ class PseudoScreen:
         This may be a Xinerama screen or a RandR CRTC, both of which are
         rectagular sections of an actual Screen.
     """
-    def __init__(self, conn, x, y, width, height):
-        self.conn = conn
+    def __init__(self, x, y, width, height):
         self.x, self.y, self.width, self.height = x, y, width, height
 
 
@@ -156,25 +155,24 @@ class Xinerama:
         self.ext = conn.conn(xcb.xinerama.key)
 
     def query_screens(self):
-        r = self.ext.QueryScreens().reply()
-        return r.screen_info
-
+        info = self.ext.QueryScreens().reply().screen_info
+        return [PseudoScreen(s.x_org, s.y_org, s.width, s.height) for s in info]
+    
 
 class RandR:
     def __init__(self, conn):
         self.ext = conn.conn(xcb.randr.key)
+        self.__conn = conn
 
+    def query_screens(self):
+        screens = self.query_crtcs(self.__conn.screens[0].root.wid)
+        return screens
+    
     def query_crtcs(self, root):
         l = []
         for i in self.ext.GetScreenResources(root).reply().crtcs:
             info = self.ext.GetCrtcInfo(i, xcb.xcb.CurrentTime).reply()
-            d = dict(
-                x = info.x,
-                y = info.y,
-                width = info.width,
-                height = info.height
-            )
-            l.append(d)
+            l.append(PseudoScreen(info.x_org, info.y_org, info.width, info.height))
         return l
 
 
@@ -549,41 +547,37 @@ class Connection:
     def __init__(self, display):
         self.conn = xcb.xcb.connect(display=display)
         self.setup = self.conn.get_setup()
-        extensions = self.extensions()
-        for i in extensions:
-            if i in self._extmap:
-                setattr(self, i, self._extmap[i](self))
-
+        
+        # collect available extensions
+        self.__extensions = []
+        for name in self.conn.core.ListExtensions().reply().names:
+            self.__extensions.append(utils.chrArr(name.name).lower())
+            
+        
+        # collect screens
         self.screens = [Screen(self, i) for i in self.setup.roots]
+        
+        # check for xinerama and randr screens        
         self.pseudoscreens = []
-        if "xinerama" in extensions:
-            for i, s in enumerate(self.xinerama.query_screens()):
-                scr = PseudoScreen(
-                    self,
-                    s.x_org,
-                    s.y_org,
-                    s.width,
-                    s.height,
-                )
-                self.pseudoscreens.append(scr)
-        elif "randr" in extensions:
-            for i in self.randr.query_crtcs(self.screens[0].root.wid):
-                scr = PseudoScreen(
-                    self,
-                    i["x"],
-                    i["y"],
-                    i["width"],
-                    i["height"],
-                )
-                self.pseudoscreens.append(scr)
+        extension = None
+        if "xinerama" in self.extensions:
+            extension = Xinerama(self)
+        elif "randr" in self.extensions:
+            extension = RandR(self)
+        if extension:
+            self.pseudoscreens = extension.query_screens()
 
         self.default_screen = self.screens[self.conn.pref_screen]
+        
+        
         self.atoms = AtomCache(self)
 
-        self.code_to_syms = {}
+        # compute keycodes
+        self.code_to_syms     = None
         self.first_sym_to_code = None
         self.refresh_keymap()
 
+        # get modifier mapping
         self.modmap = None
         self.refresh_modmap()
 
@@ -592,7 +586,8 @@ class Connection:
             first = self.setup.min_keycode
             count = self.setup.max_keycode - self.setup.min_keycode + 1
         q = self.conn.core.GetKeyboardMapping(first, count).reply()
-
+        
+        self.code_to_syms = {}
         l = []
         for i, v in enumerate(q.keysyms):
             if not i%q.keysyms_per_keycode:
@@ -674,5 +669,6 @@ class Connection:
         self.conn.core.OpenFont(fid, len(name), name)
         return Font(self, fid)
 
+    @property
     def extensions(self):
-        return set([toStr(i).lower() for i in self.conn.core.ListExtensions().reply().names])
+        return self.__extensions

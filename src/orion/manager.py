@@ -392,8 +392,6 @@ class Orion(object):
         # Find the modifier mask for the numlock key, if there is one:
         nc = self.conn.keysym_to_keycode(xcbq.keysyms["Num_Lock"])
         self.numlockMask = window.proto.ModMasks[self.conn.get_modifier(nc)]
-        print self.numlockMask
-        wlasnie sprawdzam co po kolei sie tu dizeje i porzadkuje
         self.validMask = ~(self.numlockMask | window.proto.ModMasks["lock"])
 
         # Because we only do Xinerama multi-screening, we can assume that the first

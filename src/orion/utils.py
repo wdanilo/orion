@@ -46,6 +46,10 @@ class flagEnum(object):
     def __iter__(self):
         return self.__enums.__iter__()
 
+
+def chrArr(arr):
+    return ''.join([chr(i) for i in arr])
+
 #############################################
 
 
