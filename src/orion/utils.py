@@ -54,7 +54,7 @@ def chrArr(arr):
 
 
 import operator, functools, os
-import xcbq
+#import xcbq
 
 def lget(o, v):
     try:

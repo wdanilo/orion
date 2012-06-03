@@ -5,7 +5,8 @@ import xcbq
 import xcb.xproto, xcb.xinerama
 import xcb
 from xcb.xproto import EventMask
-import utils, window, hook
+import utils, hook
+from orion.core.window import window
 from orion.core import comm
 from orion.core.screen import Screen
 from orion.core.comm.connection import Connection

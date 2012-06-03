@@ -1,92 +1,16 @@
-# Copyright (c) 2008, Aldo Cortesi. All rights reserved.
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 from orion.core.window import proto
 
 import sys, struct, contextlib
 #import xcb.xcb
 from xcb.xproto import EventMask, StackMode, SetMode
 import xcb.xproto
-import utils
+from orion import utils
 #import command
-import hook
+from orion import hook
 
-from utils import flagEnum, enum
+from orion.utils import flagEnum, enum
 
-
-sizeHintsFlags = flagEnum(
-        'USPosition',
-        'USSize',
-        'PPosition',
-        'PSize',
-        'PMinSize',
-        'PMaxSize',
-        'PResizeInc',
-        'PAspect',
-        'PBaseSize',
-        'PWinGravity',
-)
-                      
-PAllHints = (sizeHintsFlags.PPosition|sizeHintsFlags.PSize|sizeHintsFlags.PMinSize|sizeHintsFlags.PMaxSize|sizeHintsFlags.PResizeInc|sizeHintsFlags.PAspect)
-
-wmHintsFlags = flagEnum(
-        'InputHint',
-        'StateHint',
-        'IconPixmapHint',
-        'IconWindowHint',
-        'IconPositionHint',
-        'IconMaskHint',
-        'WindowGroupHint',
-        'MessageHint',
-        'UrgencyHint',
-)
-
-AllHints = (wmHintsFlags.InputHint|wmHintsFlags.StateHint|wmHintsFlags.IconPixmapHint|wmHintsFlags.IconWindowHint|
-            wmHintsFlags.IconPositionHint|wmHintsFlags.IconMaskHint|wmHintsFlags.WindowGroupHint|wmHintsFlags.MessageHint|
-            wmHintsFlags.UrgencyHint)
-
-# DontCareState = 0
-wmState = enum(
-        'WITHDRAWN',
-        'NORMAL',
-        'ZOOM',
-        'ICONIC',
-        'INACTIVE',
-)
-
-
-visualMask = enum(
-        VisualNoMask = 0x0,
-        VisualIDMask = 0x1,
-        VisualScreenMask = 0x2,
-        VisualDepthMask = 0x4,
-        VisualClassMask = 0x8,
-        VisualRedMaskMask = 0x10,
-        VisualGreenMaskMask = 0x20,
-        VisualBlueMaskMask = 0x40,
-        VisualColormapSizeMask = 0x80,
-        VisualBitsPerRGBMask = 0x100,
-        VisualAllMask = 0x1FF,
-)
-
-
+from icccm import wmState
 # float states
 floatStates = enum(
         'NOT_FLOATING',
