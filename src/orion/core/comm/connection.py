@@ -9,7 +9,7 @@ from orion.core.window import icccm
 
 from orion.core.screen.extensions import Xinerama, RandR
 
-from orion.xcbq import Window
+from orion.core.window.window import Window
 from orion.xcbq import AtomCache
 
 class _Wrapper:
@@ -24,10 +24,10 @@ class XScreen(_Wrapper):
     """
         This represents an actual X screen.
     """
-    def __init__(self, conn, screen):
+    def __init__(self, conn, screen, qtile):
         _Wrapper.__init__(self, screen)
         self.default_colormap = Colormap(conn, screen.default_colormap)
-        self.root = Window(conn, self.root)
+        self.root = Window(conn, self.root, qtile)
 
 
 
@@ -56,7 +56,7 @@ class Connection:
         "xinerama": Xinerama,
         "randr": RandR,
     }
-    def __init__(self, display):
+    def __init__(self, display, qtile):
         self.conn = xcb.xcb.connect(display=display)
         self.setup = self.conn.get_setup()
         
@@ -66,7 +66,7 @@ class Connection:
             self.__extensions.append(utils.chrArr(name.name).lower())
             
         # collect screens
-        self.screens = [XScreen(self, i) for i in self.setup.roots]
+        self.screens = [XScreen(self, i, qtile) for i in self.setup.roots]
         
         # check for xinerama and randr screens        
         self.pseudoscreens = []

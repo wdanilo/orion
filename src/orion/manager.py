@@ -10,6 +10,7 @@ from orion.core.window import window
 from orion.core import comm
 from orion.core.screen import Screen
 from orion.core.comm.connection import Connection
+from orion.core.window.window import Window
 #import command
 
 import logging
@@ -380,7 +381,7 @@ class Orion(object):
         self.fname = fname
         '''
             
-        self.conn = Connection(displayName)
+        self.conn = Connection(displayName, self)
         self.config = config
         hook.init(self)
 
@@ -643,13 +644,13 @@ class Orion(object):
                 self.windowMap[w.wid] = c
             else:
                 try:
-                    c = window.Window(w, self)
+                    c = w
+                    c.xxx(self)
+                    #c = window.Window(w, self)
                 except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
                     return
                 hook.fire("client_new", c)
                 # Window may be defunct because it's been declared static in hook.
-                if c.defunct:
-                    return
                 self.windowMap[w.wid] = c
                 # Window may have been bound to a group in the hook.
                 if not c.group:
@@ -966,7 +967,7 @@ class Orion(object):
             args["width"] = max(e.width, 0)
         if e.value_mask & cw.BorderWidth:
             args["borderwidth"] = max(e.border_width, 0)
-        w = xcbq.Window(self.conn, e.window)
+        w = Window(self.conn, e.window, self)
         w.configure(**args)
 
     def handle_MappingNotify(self, e):
@@ -975,7 +976,7 @@ class Orion(object):
             self.grabKeys()
 
     def handle_MapRequest(self, e):
-        w = xcbq.Window(self.conn, e.window)
+        w = Window(self.conn, e.window, self)
         c = self.manage(w)
         if c and (not c.group or not c.group.screen):
             return
