@@ -30,14 +30,14 @@ class Signal:
         self.funchost = []
 
     def __call__(self, *args, **kwargs):
-        event = Event(*args, rootTarget=self.__target, **kwargs)
+        event = Event(*args, target=self.__target, **kwargs)
         self.chainCall(event)
                 
     def call(self, *args, **kwargs):
         self.__call__(*args, **kwargs)
         
     def chainCall(self, event):
-        event.target = self.__target
+        event.currentTarget = self.__target
         for i in range(len(self.slots)):
             slot = self.slots[i]
             if slot != None:

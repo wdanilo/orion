@@ -13,8 +13,7 @@ on_mouse_enter = Signal()
 def f(e):
     print '!!!'
     print e.target
-    print e.rootTarget
-    dodane target i rootTarget dla sygnalow!
+    print e.currentTarget
     
 on_mouse_enter.connect(f)
 
