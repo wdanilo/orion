@@ -6,6 +6,18 @@ SKIPLOG = set()
 import logging
 logger = logging.getLogger(__name__)
 
+from orion.signals import Signal
+
+on_mouse_enter = Signal()
+
+def f(e):
+    print '!!!'
+    print e.target
+    print e.rootTarget
+    dodane target i rootTarget dla sygnalow!
+    
+on_mouse_enter.connect(f)
+
 def init(q):
     global qtile
     qtile = q

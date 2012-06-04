@@ -13,6 +13,7 @@ from orion.utils import flagEnum, enum
 from icccm import wmState
 import icccm
 from xcb.xproto import CW
+from orion.signals import Signal
 # float states
 floatStates = enum(
         'NOT_FLOATING',
@@ -108,7 +109,7 @@ class _BaseWindow(object):
         self.updateHints()
 
 
-    def updateName(self):
+    def update_name(self):
         try:
             self.name = self.get_name()
         except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
@@ -433,7 +434,7 @@ class Window(_BaseWindow):
     
     def xxx(self,qtile):
         _BaseWindow.__init__(self, qtile)
-        self.updateName()
+        self.update_name()
 
         # add window to the save-set, so it gets mapped when qtile dies
         qtile.conn.conn.core.ChangeSaveSet(SetMode.Insert, self.wid)
@@ -441,6 +442,8 @@ class Window(_BaseWindow):
     def __init__(self, conn, wid, qtile):
         self.qtile = qtile
         self.conn, self.wid = conn, wid
+        
+        self.on_mouse_enter = Signal()
 
     def _propertyString(self, r):
         """
@@ -448,11 +451,11 @@ class Window(_BaseWindow):
         """
         return "".join(chr(i) for i in r.value)
 
-    def send_event(self, eventbuf, mask=EventMask.NoEvent):
-        self.conn.conn.core.SendEvent(False, self.wid, mask, eventbuf)
+#    def send_event(self, eventbuf, mask=EventMask.NoEvent):
+#        self.conn.conn.core.SendEvent(False, self.wid, mask, eventbuf)
 
-    def kill_client(self):
-        self.conn.conn.core.KillClient(self.wid)
+#    def kill_client(self):
+#        self.conn.conn.core.KillClient(self.wid)
 
     def set_input_focus(self):
         self.conn.conn.core.SetInputFocus(
@@ -461,17 +464,17 @@ class Window(_BaseWindow):
             xcb.xproto.Time.CurrentTime
         )
 
-    def warp_pointer(self, x, y):
-        self.conn.conn.core.WarpPointer(
-                0
-                ,self.wid
-                ,0
-                ,0
-                ,0
-                ,0
-                ,x
-                ,y
-        )
+#    def warp_pointer(self, x, y):
+#        self.conn.conn.core.WarpPointer(
+#                0
+#                ,self.wid
+#                ,0
+#                ,0
+#                ,0
+#                ,0
+#                ,x
+#                ,y
+#        )
 
     def get_name(self):
         """
@@ -536,58 +539,58 @@ class Window(_BaseWindow):
                 win_gravity = l[9+4],
             )
 
-    def get_wm_protocols(self):
-        r = self.get_property("WM_PROTOCOLS", xcb.xproto.GetPropertyType.Any)
-        if r:
-            data = struct.pack("B" * len(r.value), *(list(r.value)))
-            l = struct.unpack_from("=" + "L"*r.value_len, data)
-            return set([self.conn.atoms.get_name(i) for i in l])
-        else:
-            return set()
+#    def get_wm_protocols(self):
+#        r = self.get_property("WM_PROTOCOLS", xcb.xproto.GetPropertyType.Any)
+#        if r:
+#            data = struct.pack("B" * len(r.value), *(list(r.value)))
+#            l = struct.unpack_from("=" + "L"*r.value_len, data)
+#            return set([self.conn.atoms.get_name(i) for i in l])
+#        else:
+#            return set()
 
     def get_wm_state(self):
         r = self.get_property("WM_STATE", xcb.xproto.GetPropertyType.Any)
         if r:
             return struct.unpack('=LL', r.value.buf())
 
-    def get_wm_class(self):
-        """
-            Return an (instance, class) tuple if WM_CLASS exists, or None.
-        """
-        r = self.get_property("WM_CLASS", "STRING")
-        if r:
-            s = self._propertyString(r)
-            return tuple(s.strip("\0").split("\0"))
+#    def get_wm_class(self):
+#        """
+#            Return an (instance, class) tuple if WM_CLASS exists, or None.
+#        """
+#        r = self.get_property("WM_CLASS", "STRING")
+#        if r:
+#            s = self._propertyString(r)
+#            return tuple(s.strip("\0").split("\0"))
 
-    def get_wm_window_role(self):
-        r = self.get_property("WM_WINDOW_ROLE", "STRING")
-        if r:
-            return self._propertyString(r)
-
-    def get_wm_transient_for(self):
-        r = self.get_property("WM_TRANSIENT_FOR", "ATOM")
-        if r:
-            return list(r.value)
-
-    def get_wm_icon_name(self):
-        r = self.get_property("WM_ICON_NAME", "UTF8_STRING")
-        if r:
-            return self._propertyString(r)
-
-    def get_wm_client_machine(self):
-        r = self.get_property("WM_CLIENT_MACHINE", "UTF8_STRING")
-        if r:
-            return self._propertyString(r)
-
+#    def get_wm_window_role(self):
+#        r = self.get_property("WM_WINDOW_ROLE", "STRING")
+#        if r:
+#            return self._propertyString(r)
+#
+#    def get_wm_transient_for(self):
+#        r = self.get_property("WM_TRANSIENT_FOR", "ATOM")
+#        if r:
+#            return list(r.value)
+#
+#    def get_wm_icon_name(self):
+#        r = self.get_property("WM_ICON_NAME", "UTF8_STRING")
+#        if r:
+#            return self._propertyString(r)
+#
+#    def get_wm_client_machine(self):
+#        r = self.get_property("WM_CLIENT_MACHINE", "UTF8_STRING")
+#        if r:
+#            return self._propertyString(r)
+#
     def get_geometry(self):
         q = self.conn.conn.core.GetGeometry(self.wid)
         return q.reply()
-
-    def get_wm_desktop(self):
-        r = self.get_property("_NET_WM_DESKTOP", "CARDINAL")
-        if r:
-            return r.value[0]
-
+#
+#    def get_wm_desktop(self):
+#        r = self.get_property("_NET_WM_DESKTOP", "CARDINAL")
+#        if r:
+#            return r.value[0]
+#
     def get_wm_type(self):
         """
             http://standards.freedesktop.org/wm-spec/wm-spec-latest.html#id2551529
@@ -687,9 +690,9 @@ class Window(_BaseWindow):
         else:
             return r
 
-    def list_properties(self):
-        r = self.conn.conn.core.ListProperties(self.wid).reply()
-        return [self.conn.atoms.get_name(i) for i in r.atoms]
+#    def list_properties(self):
+#        r = self.conn.conn.core.ListProperties(self.wid).reply()
+#        return [self.conn.atoms.get_name(i) for i in r.atoms]
 
     def map(self):
         self.conn.conn.core.MapWindow(self.wid)
@@ -699,12 +702,12 @@ class Window(_BaseWindow):
 
     def get_attributes(self):
         return self.conn.conn.core.GetWindowAttributes(self.wid).reply()
-
-    def create_gc(self, **kwargs):
-        gid = self.conn.conn.generate_id()
-        mask, values = GCMasks(**kwargs)
-        self.conn.conn.core.CreateGC(gid, self.wid, mask, values)
-        return GC(self.conn, gid)
+#
+#    def create_gc(self, **kwargs):
+#        gid = self.conn.conn.generate_id()
+#        mask, values = GCMasks(**kwargs)
+#        self.conn.conn.core.CreateGC(gid, self.wid, mask, values)
+#        return GC(self.conn, gid)
 
     def ungrab_key(self, key, modifiers):
         """
@@ -749,22 +752,22 @@ class Window(_BaseWindow):
             modifiers,
         )
 
-    def grab_pointer(self, owner_events, event_mask, pointer_mode, keyboard_mode, cursor=None):
-        self.conn.conn.core.GrabPointer(
-            owner_events,
-            self.wid,
-            event_mask,
-            pointer_mode,
-            keyboard_mode,
-            xcb.xproto.Atom._None,
-            cursor or xcb.xproto.Atom._None,
-            xcb.xproto.Atom._None,
-        )
-
-    def ungrab_pointer(self):
-        self.conn.conn.core.UngrabPointer(
-            xcb.xproto.Atom._None,
-        )
+#    def grab_pointer(self, owner_events, event_mask, pointer_mode, keyboard_mode, cursor=None):
+#        self.conn.conn.core.GrabPointer(
+#            owner_events,
+#            self.wid,
+#            event_mask,
+#            pointer_mode,
+#            keyboard_mode,
+#            xcb.xproto.Atom._None,
+#            cursor or xcb.xproto.Atom._None,
+#            xcb.xproto.Atom._None,
+#        )
+#
+#    def ungrab_pointer(self):
+#        self.conn.conn.core.UngrabPointer(
+#            xcb.xproto.Atom._None,
+#        )
 
     def query_tree(self):
         q = self.conn.conn.core.QueryTree(self.wid).reply()
@@ -773,7 +776,7 @@ class Window(_BaseWindow):
             root = Window(self.conn, q.root, self.qtile)
         if q.parent:
             parent = Window(self.conn, q.root, self.qtile)
-        return root, parent, [Window(self.conn, i) for i in q.children]
+        return root, parent, [Window(self.conn, i, self.qtile) for i in q.children]
     
     
     #################
@@ -956,7 +959,6 @@ class Window(_BaseWindow):
             self.height = h
         self._reconfigure_floating(new_float_state=new_float_state)
 
-
     def enablefloating(self):
         fi = self._float_info
         self._enablefloating(fi['x'], fi['y'], fi['w'], fi['h'])
@@ -1006,6 +1008,8 @@ class Window(_BaseWindow):
         return False
 
     def handle_EnterNotify(self, e):
+        self.on_mouse_enter()
+        
         hook.fire("client_mouse_enter", self)
         if self.qtile.config.follow_mouse_focus and \
                         self.group.currentWindow != self:
@@ -1050,11 +1054,11 @@ class Window(_BaseWindow):
         elif name == "WM_NORMAL_HINTS":
             pass
         elif name == "WM_NAME":
-            self.updateName()
+            self.update_name()
         elif name == "_NET_WM_NAME":
-            self.updateName()
+            self.update_name()
         elif name == "_NET_WM_VISIBLE_NAME":
-            self.updateName()
+            self.update_name()
         elif name == "_NET_WM_WINDOW_OPACITY":
             pass
         elif name == "_NET_WM_STATE":

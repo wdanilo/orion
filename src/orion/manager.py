@@ -436,8 +436,6 @@ class Orion(object):
 
         self.conn.flush()
         self.conn.xsync()
-        self._prev = None # for logging
-        self._prev_count = 0
         self._xpoll()
         if self._exit:
             print >> sys.stderr, "Access denied: Another window manager running?"
@@ -646,6 +644,7 @@ class Orion(object):
                 try:
                     c = w
                     c.xxx(self)
+                    c.on_mouse_enter.connect(hook.on_mouse_enter)
                     #c = window.Window(w, self)
                 except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
                     return
