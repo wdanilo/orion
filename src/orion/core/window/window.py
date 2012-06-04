@@ -444,6 +444,10 @@ class Window(_BaseWindow):
         self.conn, self.wid = conn, wid
         
         self.on_mouse_enter = Signal()
+        self.on_key_press = Signal()
+        self.on_key_release = Signal()
+        self.on_map_request = Signal()
+        self.on_destroy_notify = Signal()
 
     def _propertyString(self, r):
         """
@@ -1007,6 +1011,20 @@ class Window(_BaseWindow):
 
         return False
 
+    def handle_event(self, e):
+        if e.name == 'KeyPressEvent':
+            keycode = self.conn.code_to_syms[e.detail][0]
+            self.on_key_press(keycode=keycode, state=e.state)
+        elif e.name == 'KeyReleaseEvent':
+            keycode = self.conn.code_to_syms[e.detail][0]
+            self.on_key_release(keycode=keycode, state=e.state)
+        elif e.name == 'MapRequestEvent':
+            self.on_map_request(window=e.window)
+        elif e.name == 'DestroyNotifyEvent':
+            self.on_destroy_notify(window=e.window)
+        else:
+            print 'Unknown event: %s'%e.name
+        
     def handle_EnterNotify(self, e):
         self.on_mouse_enter()
         

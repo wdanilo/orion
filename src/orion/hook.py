@@ -8,7 +8,15 @@ logger = logging.getLogger(__name__)
 
 from orion.signals import Signal
 
-on_mouse_enter = Signal()
+on_mouse_enter      = Signal()
+on_key_press        = Signal()
+on_key_release      = Signal()
+on_map_request      = Signal()
+on_destroy_notify   = Signal()
+
+def test_terminal(e):
+    import subprocess
+    subprocess.Popen('gnome-terminal')
 
 def f(e):
     print '!!!'
@@ -16,9 +24,14 @@ def f(e):
     print e.currentTarget
     
 on_mouse_enter.connect(f)
+on_key_press.connect(test_terminal)
 
 def manage(window):
     window.on_mouse_enter.connect(on_mouse_enter)
+    window.on_key_press.connect(on_key_press)
+    window.on_key_release.connect(on_key_release)
+    window.on_map_request.connect(on_map_request)
+    window.on_destroy_notify.connect(on_destroy_notify)
 
 def init(q):
     global qtile

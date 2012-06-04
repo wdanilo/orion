@@ -400,6 +400,10 @@ class Orion(object):
         # Because we only do Xinerama multi-screening, we can assume that the first
         # screen's root is _the_ root.
         self.root = self.conn.default_screen.root
+        hook.manage(self.root)
+        self.root.on_map_request.connect(self.handle_MapRequest)
+        self.root.on_destroy_notify.connect(self.handle_DestroyNotify)
+        
         self.root.set_attribute(
             eventmask = EventMask.StructureNotify |\
                         EventMask.SubstructureNotify |\
@@ -422,6 +426,7 @@ class Orion(object):
         self.currentScreen = self.screens[0]
         self._drag = None
 
+        '''
         self.ignoreEvents = set([
             xcb.xproto.KeyReleaseEvent,
             xcb.xproto.ReparentNotifyEvent,
@@ -432,8 +437,18 @@ class Orion(object):
             xcb.xproto.FocusOutEvent,
             xcb.xproto.FocusInEvent,
             xcb.xproto.NoExposureEvent
+        ])'''
+        self.ignoreEvents = set([
+            xcb.xproto.ReparentNotifyEvent,
+            xcb.xproto.CreateNotifyEvent,
+            # DWM handles this to help "broken focusing windows".
+            xcb.xproto.MapNotifyEvent,
+            xcb.xproto.LeaveNotifyEvent,
+            xcb.xproto.FocusOutEvent,
+            xcb.xproto.FocusInEvent,
+            xcb.xproto.NoExposureEvent
         ])
-
+        
         self.conn.flush()
         self.conn.xsync()
         self._xpoll()
@@ -450,6 +465,14 @@ class Orion(object):
             xcb.xproto.GrabMode.Async,
             xcb.xproto.GrabMode.Async,
         )
+        
+        self.root.grab_key(
+            52,
+            0,
+            True,
+            xcb.xproto.GrabMode.Async,
+            xcb.xproto.GrabMode.Async,
+        )
 
         self.mouseMap = {}
         for i in self.config.mouse:
@@ -460,7 +483,6 @@ class Orion(object):
         hook.fire("startup")
 
         self.scan()
-
 
     def _process_screens(self):
         for screen in self.conn.pseudoscreens:
@@ -557,7 +579,6 @@ class Orion(object):
             )
         del(self.keyMap[key_index])
 
-
     def addGroup(self, name):
         if name not in self.groupMap.keys():
             g = Group(name)
@@ -581,7 +602,6 @@ class Orion(object):
             self.groups.remove(group)
             del(self.groupMap[name])
             hook.fire("delgroup")
-
 
     @utils.LRUCache(200)
     def colorPixel(self, name):
@@ -719,7 +739,6 @@ class Orion(object):
         elif ename in eventEvents:
             c = self.windowMap.get(e.event)
 
-        print '>>>', c
         if c and hasattr(c, handler):
             chain.append(getattr(c, handler))
         if hasattr(self, handler):
@@ -729,6 +748,13 @@ class Orion(object):
         return chain
 
     def _xpoll(self, conn=None, cond=None):
+        eventEvents = [
+            "EnterNotify",
+            "ButtonPress",
+            "ButtonRelease",
+            "KeyPress",
+        ]
+        
         while True:
             e = self.conn.conn.poll_for_event()
             if not e:
@@ -738,17 +764,27 @@ class Orion(object):
             if e.response_type >= 128:
                 e = xcb.xproto.ClientMessageEvent(e)
 
-            ename = e.__class__.__name__
-
+            #ename = e.__class__.__name__
+            e.name = e.__class__.__name__
+            '''
             if ename.endswith("Event"):
+                print '!!!!!!!', ename
                 ename = ename[:-5]
-                
+            '''
+             
             if not e.__class__ in self.ignoreEvents:
-                for h in self.get_target_chain(ename, e):
-                    logger.debug("Handling: %s"%ename)
-                    r = h(e)
-                    if not r:
-                        break
+                window = None
+                if hasattr(e, "window"):
+                    window = self.windowMap.get(e.window)
+                elif hasattr(e, "drawable"):
+                    window = self.windowMap.get(e.drawable)
+                elif e.name in eventEvents:
+                    window = self.windowMap.get(e.event)
+                if not window:
+                    print '!'
+                    window = self.root
+                
+                window.handle_event(e)
         return True
 
     def loop(self):
@@ -818,7 +854,6 @@ class Orion(object):
         if len(y_match) == 1:
             return y_match[0]
         return self._find_closest_closest(x, y, x_match + y_match)
-
 
     def _find_closest_closest(self, x, y, candidate_screens):
         """
@@ -944,7 +979,6 @@ class Orion(object):
                         self.log.add(s)
                         print >> sys.stderr, s
 
-
     def handle_ConfigureNotify(self, e):
         """
             Handle xrandr events.
@@ -1010,7 +1044,6 @@ class Orion(object):
         if self.currentWindow and group:
             self.addGroup(group)
             self.currentWindow.togroup(group)
-
 
     def _items(self, name):
         if name == "group":
@@ -1136,8 +1169,6 @@ class Orion(object):
         else:
             group = self.currentGroup
         group.prevLayout()
-
-
 
     def cmd_report(self, msg="None", path="~/qtile_crashreport"):
         """
