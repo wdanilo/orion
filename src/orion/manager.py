@@ -644,7 +644,7 @@ class Orion(object):
                 try:
                     c = w
                     c.xxx(self)
-                    c.on_mouse_enter.connect(hook.on_mouse_enter)
+                    hook.manage(c)
                     #c = window.Window(w, self)
                 except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
                     return
@@ -719,6 +719,7 @@ class Orion(object):
         elif ename in eventEvents:
             c = self.windowMap.get(e.event)
 
+        print '>>>', c
         if c and hasattr(c, handler):
             chain.append(getattr(c, handler))
         if hasattr(self, handler):

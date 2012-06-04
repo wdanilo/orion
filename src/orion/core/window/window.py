@@ -1047,6 +1047,7 @@ class Window(_BaseWindow):
 
     def handle_PropertyNotify(self, e):
         name = self.qtile.conn.atoms.get_name(e.atom)
+        print 'name: ', name
         if name == "WM_TRANSIENT_FOR":
             pass
         elif name == "WM_HINTS":

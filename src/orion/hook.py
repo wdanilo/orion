@@ -17,6 +17,9 @@ def f(e):
     
 on_mouse_enter.connect(f)
 
+def manage(window):
+    window.on_mouse_enter.connect(on_mouse_enter)
+
 def init(q):
     global qtile
     qtile = q
