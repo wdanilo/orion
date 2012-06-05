@@ -8,11 +8,15 @@ logger = logging.getLogger(__name__)
 
 from orion.signals import Signal
 
-on_mouse_enter      = Signal()
-on_key_press        = Signal()
-on_key_release      = Signal()
-on_map_request      = Signal()
-on_destroy_notify   = Signal()
+on_mouse_enter          = Signal()
+on_key_press            = Signal()
+on_key_release          = Signal()
+on_map_request          = Signal()
+on_destroy_notify       = Signal()
+on_property_notify      = Signal()
+on_client_message       = Signal()
+on_configure_request    = Signal()
+on_configure_notify     = Signal()
 
 def test_terminal(e):
     import subprocess
@@ -32,6 +36,10 @@ def manage(window):
     window.on_key_release.connect(on_key_release)
     window.on_map_request.connect(on_map_request)
     window.on_destroy_notify.connect(on_destroy_notify)
+    window.on_property_notify.connect(on_property_notify)
+    window.on_client_message.connect(on_client_message)
+    window.on_configure_request.connect(on_configure_request)
+    window.on_configure_notify.connect(on_configure_notify)
 
 def init(q):
     global qtile

@@ -1,4 +1,4 @@
-from weakref import *
+from weakref import ref
 import inspect
 import sys
 
@@ -30,7 +30,10 @@ class Signal:
         self.funchost = []
 
     def __call__(self, *args, **kwargs):
-        event = Event(*args, target=self.__target, **kwargs)
+        baseEvent = kwargs.pop('event',None)
+        vardict = vars(baseEvent) if baseEvent else {}
+        vardict.update(kwargs)
+        event = Event(*args, target=self.__target, **vardict)
         self.chainCall(event)
                 
     def call(self, *args, **kwargs):

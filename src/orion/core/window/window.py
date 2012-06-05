@@ -68,6 +68,9 @@ class _BaseWindow(object):
         self.qtile = qtile
         self.hidden = True
         self.group = None
+        self.name = "<no name>"
+    
+    def xx(self):
         self.set_attribute(eventmask=self._windowMask)
         try:
             g = self.get_geometry()
@@ -85,7 +88,6 @@ class _BaseWindow(object):
             self._float_info = None
         self.borderwidth = 0
         self.bordercolor = None
-        self.name = "<no name>"
         self.state = wmState.NORMAL
         self.window_type = "normal"
         self._float_state = floatStates.NOT_FLOATING
@@ -433,21 +435,30 @@ class Window(_BaseWindow):
                   EventMask.FocusChange
     
     def xxx(self,qtile):
-        _BaseWindow.__init__(self, qtile)
+        self.xx()
         self.update_name()
 
         # add window to the save-set, so it gets mapped when qtile dies
         qtile.conn.conn.core.ChangeSaveSet(SetMode.Insert, self.wid)
     
     def __init__(self, conn, wid, qtile):
+        _BaseWindow.__init__(self, qtile)
         self.qtile = qtile
         self.conn, self.wid = conn, wid
         
-        self.on_mouse_enter = Signal()
-        self.on_key_press = Signal()
-        self.on_key_release = Signal()
-        self.on_map_request = Signal()
-        self.on_destroy_notify = Signal()
+        self.on_mouse_enter         = Signal()
+        self.on_key_press           = Signal()
+        self.on_key_release         = Signal()
+        self.on_map_request         = Signal()
+        self.on_destroy_notify      = Signal()
+        self.on_property_notify     = Signal()
+        self.on_client_message      = Signal()
+        self.on_configure_request   = Signal()
+        self.on_configure_notify    = Signal()
+        
+        self.on_property_notify.connect(self.handle_PropertyNotify)
+        self.on_configure_request.connect(self.handle_ConfigureRequest)
+        #self.on_mouse_enter.connect(self.handle_EnterNotify)
 
     def _propertyString(self, r):
         """
@@ -1014,20 +1025,28 @@ class Window(_BaseWindow):
     def handle_event(self, e):
         if e.name == 'KeyPressEvent':
             keycode = self.conn.code_to_syms[e.detail][0]
-            self.on_key_press(keycode=keycode, state=e.state)
+            self.on_key_press(keycode=keycode, state=e.state, event=e)
         elif e.name == 'KeyReleaseEvent':
             keycode = self.conn.code_to_syms[e.detail][0]
-            self.on_key_release(keycode=keycode, state=e.state)
+            self.on_key_release(keycode=keycode, state=e.state, event=e)
         elif e.name == 'MapRequestEvent':
-            self.on_map_request(window=e.window)
+            self.on_map_request(event=e)
         elif e.name == 'DestroyNotifyEvent':
-            self.on_destroy_notify(window=e.window)
+            self.on_destroy_notify(event=e)
+        elif e.name == 'PropertyNotifyEvent':
+            self.on_property_notify(event=e)
+        elif e.name == 'ClientMessageEvent':
+            self.on_client_message(event=e)
+        elif e.name == 'ConfigureRequestEvent':
+            self.on_configure_request(event=e)
+        elif e.name == 'ConfigureNotifyEvent':
+            self.on_configure_notify(event=e)
+        elif e.name == 'EnterNotifyEvent':
+            self.on_mouse_enter(event=e)
         else:
             print 'Unknown event: %s'%e.name
         
     def handle_EnterNotify(self, e):
-        self.on_mouse_enter()
-        
         hook.fire("client_mouse_enter", self)
         if self.qtile.config.follow_mouse_focus and \
                         self.group.currentWindow != self:
@@ -1037,6 +1056,9 @@ class Window(_BaseWindow):
         return True
 
     def handle_ConfigureRequest(self, e):
+        '''
+        FIXME: w okienku bedacym root, ponizsza obsluga jest niepotrzebna!
+        '''
         if self.qtile._drag and self.qtile.currentWindow == self:
             # ignore requests while user is dragging window
             return
@@ -1065,7 +1087,6 @@ class Window(_BaseWindow):
 
     def handle_PropertyNotify(self, e):
         name = self.qtile.conn.atoms.get_name(e.atom)
-        print 'name: ', name
         if name == "WM_TRANSIENT_FOR":
             pass
         elif name == "WM_HINTS":

@@ -403,6 +403,8 @@ class Orion(object):
         hook.manage(self.root)
         self.root.on_map_request.connect(self.handle_MapRequest)
         self.root.on_destroy_notify.connect(self.handle_DestroyNotify)
+        self.root.on_configure_request.connect(self.handle_ConfigureRequest)
+        hook.on_configure_notify.connect(self.handle_ConfigureNotify)
         
         self.root.set_attribute(
             eventmask = EventMask.StructureNotify |\
@@ -988,6 +990,9 @@ class Orion(object):
             screen.resize(0, 0, e.width, e.height)
 
     def handle_ConfigureRequest(self, e):
+        '''
+        tylko dla okienka root!
+        '''
         # It's not managed, or not mapped, so we just obey it.
         cw = xcb.xproto.ConfigWindow
         args = {}
