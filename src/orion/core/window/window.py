@@ -1023,6 +1023,7 @@ class Window(_BaseWindow):
         return False
 
     def handle_event(self, e):
+        print '>>> %s'%e.name
         if e.name == 'KeyPressEvent':
             keycode = self.conn.code_to_syms[e.detail][0]
             self.on_key_press(keycode=keycode, state=e.state, event=e)

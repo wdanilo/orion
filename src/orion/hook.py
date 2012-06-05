@@ -1,4 +1,5 @@
 import manager
+from orion.utils import pack
 
 subscriptions = {}
 SKIPLOG = set()
@@ -8,15 +9,31 @@ logger = logging.getLogger(__name__)
 
 from orion.signals import Signal
 
-on_mouse_enter          = Signal()
-on_key_press            = Signal()
-on_key_release          = Signal()
-on_map_request          = Signal()
-on_destroy_notify       = Signal()
-on_property_notify      = Signal()
-on_client_message       = Signal()
-on_configure_request    = Signal()
-on_configure_notify     = Signal()
+window = pack(
+    on_create               = Signal(),
+    on_mouse_enter          = Signal(),
+    on_key_press            = Signal(),
+    on_key_release          = Signal(),
+    on_map_request          = Signal(),
+    on_destroy_notify       = Signal(),
+    on_property_notify      = Signal(),
+    on_client_message       = Signal(),
+    on_configure_request    = Signal(),
+    on_configure_notify     = Signal(),
+)
+
+screen = pack(
+    on_create               = Signal(),
+    on_mouse_enter          = Signal(),
+    on_key_press            = Signal(),
+    on_key_release          = Signal(),
+    on_map_request          = Signal(),
+    on_destroy_notify       = Signal(),
+    on_property_notify      = Signal(),
+    on_client_message       = Signal(),
+    on_configure_request    = Signal(),
+    on_configure_notify     = Signal(),
+)
 
 def test_terminal(e):
     import subprocess
@@ -27,23 +44,38 @@ def f(e):
     print e.target
     print e.currentTarget
     
-on_mouse_enter.connect(f)
-on_key_press.connect(test_terminal)
+window.on_mouse_enter.connect(f)
+screen.on_key_press.connect(test_terminal)
 
-def manage(window):
-    window.on_mouse_enter.connect(on_mouse_enter)
-    window.on_key_press.connect(on_key_press)
-    window.on_key_release.connect(on_key_release)
-    window.on_map_request.connect(on_map_request)
-    window.on_destroy_notify.connect(on_destroy_notify)
-    window.on_property_notify.connect(on_property_notify)
-    window.on_client_message.connect(on_client_message)
-    window.on_configure_request.connect(on_configure_request)
-    window.on_configure_notify.connect(on_configure_notify)
+def manage_window(e):
+    w = e.window
+    w.on_mouse_enter.       connect(window.on_mouse_enter)
+    w.on_key_press.         connect(window.on_key_press)
+    w.on_key_release.       connect(window.on_key_release)
+    w.on_map_request.       connect(window.on_map_request)
+    w.on_destroy_notify.    connect(window.on_destroy_notify)
+    w.on_property_notify.   connect(window.on_property_notify)
+    w.on_client_message.    connect(window.on_client_message)
+    w.on_configure_request. connect(window.on_configure_request)
+    w.on_configure_notify.  connect(window.on_configure_notify)
+    
+def manage_screen(e):
+    w = e.screen
+    w.on_mouse_enter.       connect(screen.on_mouse_enter)
+    w.on_key_press.         connect(screen.on_key_press)
+    w.on_key_release.       connect(screen.on_key_release)
+    w.on_map_request.       connect(screen.on_map_request)
+    w.on_destroy_notify.    connect(screen.on_destroy_notify)
+    w.on_property_notify.   connect(screen.on_property_notify)
+    w.on_client_message.    connect(screen.on_client_message)
+    w.on_configure_request. connect(screen.on_configure_request)
+    w.on_configure_notify.  connect(screen.on_configure_notify)
 
-def init(q):
-    global qtile
-    qtile = q
+def init(orion):
+    orion.on_window_create.connect(window.on_create)
+    orion.on_window_create.connect(manage_window)
+    orion.on_screen_create.connect(screen.on_create)
+    orion.on_screen_create.connect(manage_screen)
 
 
 def clear():

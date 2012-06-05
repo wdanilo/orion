@@ -11,6 +11,7 @@ from orion.core import comm
 from orion.core.screen import Screen
 from orion.core.comm.connection import Connection
 from orion.core.window.window import Window
+from orion.signals import Signal
 #import command
 
 import logging
@@ -380,7 +381,10 @@ class Orion(object):
             fname = comm.find_sockfile(displayName)
         self.fname = fname
         '''
-            
+        
+        self.on_screen_create = Signal()
+        self.on_window_create = Signal()
+        
         self.conn = Connection(displayName, self)
         self.config = config
         hook.init(self)
@@ -400,11 +404,11 @@ class Orion(object):
         # Because we only do Xinerama multi-screening, we can assume that the first
         # screen's root is _the_ root.
         self.root = self.conn.default_screen.root
-        hook.manage(self.root)
+        self.on_screen_create(screen=self.root)
         self.root.on_map_request.connect(self.handle_MapRequest)
         self.root.on_destroy_notify.connect(self.handle_DestroyNotify)
         self.root.on_configure_request.connect(self.handle_ConfigureRequest)
-        hook.on_configure_notify.connect(self.handle_ConfigureNotify)
+        hook.screen.on_configure_notify.connect(self.handle_ConfigureNotify)
         
         self.root.set_attribute(
             eventmask = EventMask.StructureNotify |\
@@ -666,7 +670,7 @@ class Orion(object):
                 try:
                     c = w
                     c.xxx(self)
-                    hook.manage(c)
+                    self.on_window_create(window=c)
                     #c = window.Window(w, self)
                 except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
                     return
