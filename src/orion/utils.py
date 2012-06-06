@@ -50,8 +50,10 @@ class flagEnum(object):
 def chrArr(arr):
     return ''.join([chr(i) for i in arr])
 
-def pack(**kwargs):
-    return type('Pack', (), kwargs)
+class pack(object):
+    def __init__(self, **kwargs):
+        for key, val in kwargs.items():
+            setattr(self, key, val)
 
 #############################################
 

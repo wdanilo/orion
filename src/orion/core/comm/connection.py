@@ -2,7 +2,7 @@ import struct
 import xcb.xproto, xcb.xinerama, xcb.randr, xcb.xcb
 from xcb.xproto import CW, WindowClass, EventMask
 from orion import utils
-from orion import  xkeysyms
+from orion.core.keyboard import xkeysyms
 
 from orion.core.window import proto
 from orion.core.window import icccm
