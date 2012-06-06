@@ -1,9 +1,15 @@
 import xcb.xinerama
 from orion.core.screen.screen import Screen
+from pyutilib.component.core import implements, SingletonPlugin
+from api import IXorgExtension
 
-
-class Xinerama(object):
-    def __init__(self, conn):
+class Xinerama(SingletonPlugin):
+    implements (IXorgExtension)
+    
+    def __init__(self):
+        self.name = 'xinerama'
+        
+    def init(self, conn):
         self.ext = conn.conn(xcb.xinerama.key)
 
     def query_screens(self):

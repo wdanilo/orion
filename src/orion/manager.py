@@ -9,13 +9,24 @@ import utils, hook
 from orion.core.window import window
 from orion.core import comm
 from orion.core.screen import Screen
-from orion.core.comm.connection import Connection
 from orion.core.window.window import Window
 from orion.signals import Signal
+from pyutilib.component.core import ExtensionPoint
+from orion.core.display.comm.api import IDisplayServerCommunicator
 #import command
 
 import logging
 logger = logging.getLogger(__name__)
+
+
+
+
+################# DEBUG #################
+
+from orion.core.display.comm.xorg import xorg
+
+
+################# DEBUG #################
 
 
 class QtileError(Exception): pass
@@ -385,7 +396,10 @@ class Orion(object):
         self.on_screen_create = Signal()
         self.on_window_create = Signal()
         
-        self.conn = Connection(displayName, self)
+        self.displayServers = ExtensionPoint(IDisplayServerCommunicator)
+        
+        self.conn = self.displayServers()[0]
+        self.conn.init(displayName, self)
         self.config = config
         hook.init(self)
 

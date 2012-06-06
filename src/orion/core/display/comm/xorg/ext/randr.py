@@ -1,8 +1,15 @@
 import xcb
 from orion.core.screen.screen import Screen
+from pyutilib.component.core import implements, SingletonPlugin
+from api import IXorgExtension
 
-class RandR(object):
-    def __init__(self, conn):
+class RandR(SingletonPlugin):
+    implements (IXorgExtension)
+    
+    def __init__(self):
+        self.name = 'randr'
+        
+    def init(self, conn):
         self.ext = conn.conn(xcb.randr.key)
         self.__conn = conn
 

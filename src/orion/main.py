@@ -1,9 +1,10 @@
-
 import os, os.path, sys
 from orion import confreader, manager
 from orion.model.logger import Logger
-
+from pyutilib.component.core import ExtensionPoint, PluginGlobals
 def run():
+    PluginGlobals.push_env('orion')
+    
     from optparse import OptionParser, OptionGroup
     
     l = Logger('orion', verbose=True)
@@ -50,4 +51,5 @@ def run():
     q.debug = options.debug
     q.loop()
 
+    PluginGlobals.pop_env('orion')
 

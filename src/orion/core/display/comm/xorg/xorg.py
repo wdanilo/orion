@@ -1,3 +1,8 @@
+from pyutilib.component.core import ExtensionPoint
+from pyutilib.component.core import implements, SingletonPlugin
+from orion.core.display.comm.api import IDisplayServerCommunicator
+from ext.api import IXorgExtension
+
 import struct
 import xcb.xproto, xcb.xinerama, xcb.randr, xcb.xcb
 from xcb.xproto import CW, WindowClass, EventMask
@@ -6,8 +11,6 @@ from orion.core.keyboard import xkeysyms
 
 from orion.core.window import proto
 from orion.core.window import icccm
-
-from orion.core.screen.extensions import Xinerama, RandR
 
 from orion.core.window.window import Window
 from orion.xcbq import AtomCache
@@ -51,35 +54,34 @@ class Colormap:
         else:
             return self.conn.conn.core.AllocNamedColor(self.cid, len(color), color).reply()
 
-class Connection:
-    _extmap = {
-        "xinerama": Xinerama,
-        "randr": RandR,
-    }
-    def __init__(self, display, qtile):
+class Xorg(SingletonPlugin):
+    implements(IDisplayServerCommunicator)
+    
+    def init(self, display, qtile):
         self.conn = xcb.xcb.connect(display=display)
         self.setup = self.conn.get_setup()
         
         # collect available extensions
-        self.__extensions = []
+        self.__extension_list = []
         for name in self.conn.core.ListExtensions().reply().names:
-            self.__extensions.append(utils.chrArr(name.name).lower())
+            self.__extension_list.append(utils.chrArr(name.name).lower())
             
         # collect screens
         self.screens = [XScreen(self, i, qtile) for i in self.setup.roots]
+        self.__extensions = ExtensionPoint(IXorgExtension)
         
         # check for xinerama and randr screens        
         self.pseudoscreens = []
-        extension = None
-        if "xinerama" in self.extensions:
-            extension = Xinerama(self)
-        elif "randr" in self.extensions:
-            extension = RandR(self)
+        extension = self.extensions.service('xinerama')
+        if "xinerama" in self.extension_list:
+            extension = self.extensions.service('xinerama')
+        if not extension and "randr" in self.extension_list:
+            extension = self.extensions.service('randr')
         if extension:
+            extension.init(self)
             self.pseudoscreens = extension.query_screens()
 
         self.default_screen = self.screens[self.conn.pref_screen]
-        
         
         self.atoms = AtomCache(self)
 
@@ -180,6 +182,10 @@ class Connection:
         self.conn.core.OpenFont(fid, len(name), name)
         return Font(self, fid)
 
+    @property
+    def extension_list(self):
+        return self.__extension_list
+    
     @property
     def extensions(self):
         return self.__extensions
