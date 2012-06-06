@@ -1,4 +1,4 @@
-from orion.core.window import proto
+from orion.wm.window import proto
 
 import sys, struct, contextlib
 #import xcb.xcb

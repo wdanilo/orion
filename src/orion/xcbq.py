@@ -6,10 +6,10 @@ import struct
 import xcb.xproto, xcb.xinerama, xcb.randr, xcb.xcb
 from xcb.xproto import CW, WindowClass, EventMask
 import utils
-from orion.core.keyboard import xkeysyms
+from orion.wm.keyboard import xkeysyms
 
-from orion.core.window import proto
-from orion.core.window import icccm
+from orion.wm.window import proto
+from orion.wm.window import icccm
 
 # hack xcb.xproto for negative numbers
 def ConfigureWindow(self, window, value_mask, value_list):
@@ -84,7 +84,7 @@ class GC:
 
 
 
-from orion.core.window import proto
+from orion.wm.window import proto
 
 import sys, struct, contextlib
 #import xcb.xcb
@@ -96,7 +96,7 @@ from orion import hook
 
 from orion.utils import flagEnum, enum
 
-from orion.core.window.icccm import wmState
+from orion.wm.window.icccm import wmState
 # float states
 
 

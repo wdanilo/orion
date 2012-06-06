@@ -6,13 +6,12 @@ import xcb.xproto, xcb.xinerama
 import xcb
 from xcb.xproto import EventMask
 import utils, hook
-from orion.core.window import window
-from orion.core import comm
-from orion.core.screen import Screen
-from orion.core.window.window import Window
+from orion.wm.window import window
+from orion.wm.screen import Screen
+from orion.wm.window.window import Window
 from orion.signals import Signal
 from pyutilib.component.core import ExtensionPoint
-from orion.core.display.comm.api import IDisplayServerCommunicator
+from orion.wm.display.comm.api import IDisplayServerCommunicator
 #import command
 
 import logging
@@ -23,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 ################# DEBUG #################
 
-from orion.core.display.comm.xorg import xorg
+from orion.wm.display.comm.xorg import xorg
 
 
 ################# DEBUG #################

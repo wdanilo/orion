@@ -1,18 +1,18 @@
 from pyutilib.component.core import ExtensionPoint
 from pyutilib.component.core import implements, SingletonPlugin
-from orion.core.display.comm.api import IDisplayServerCommunicator
+from orion.wm.display.comm.api import IDisplayServerCommunicator
 from ext.api import IXorgExtension
 
 import struct
 import xcb.xproto, xcb.xinerama, xcb.randr, xcb.xcb
 from xcb.xproto import CW, WindowClass, EventMask
 from orion import utils
-from orion.core.keyboard import xkeysyms
+from orion.wm.keyboard import xkeysyms
 
-from orion.core.window import proto
-from orion.core.window import icccm
+from orion.wm.window import proto
+from orion.wm.window import icccm
 
-from orion.core.window.window import Window
+from orion.wm.window.window import Window
 from orion.xcbq import AtomCache
 
 class _Wrapper:

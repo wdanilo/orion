@@ -1,5 +1,5 @@
 from orion.manager import Group
-from orion.core.screen import Screen
+from orion.wm.screen import Screen
 from orion import layout
 
 keys = []

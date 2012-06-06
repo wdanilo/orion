@@ -1,5 +1,5 @@
 from base import Layout
-from orion.core.window import window
+from orion.wm.window import window
 from defaults import Defaults
 
 FLOAT_WM_TYPES = { 'utility':1,

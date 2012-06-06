@@ -1,5 +1,5 @@
 import xcb
-from orion.core.screen.screen import Screen
+from orion.wm.screen.screen import Screen
 from pyutilib.component.core import implements, SingletonPlugin
 from api import IXorgExtension
 

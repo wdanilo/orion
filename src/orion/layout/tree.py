@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from base import SingleWindow
-from orion.core.window import window
+from orion.wm.window import window
 from .. import drawer
 from .. import hook
 from defaults import Defaults
