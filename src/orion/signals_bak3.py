@@ -1,6 +1,5 @@
 from weakref import ref
 import inspect
-from collections import OrderedDict
 
 class Event(object):
     def __init__(self, *args, **kwargs):
@@ -25,15 +24,15 @@ class Signal(object):
     def __init__(self):
         #self.current_target = caller
     
-        self.slots = {}
+        self.slots = []
         self.blocked = False #to prevent looped Signals
 
         # for keeping references to _WeakMethod_FuncHost objects.
         # If we didn't, then the weak references would die for
         # non-method slots that we've created.
-        self.funchost = {}
+        self.funchost = []
 
-    def __call__(self, target=None, *args, **kwargs):
+    def __call__(self, target, *args, **kwargs):
         baseEvent = kwargs.pop('event',None)
         if baseEvent:
             vardict = vars(baseEvent)
@@ -50,11 +49,12 @@ class Signal(object):
     def _call(self, event):
         if not self.blocked:
             self.blocked = True
-            for sid, slot in self.slots.iteritems():
+            for i in range(len(self.slots)):
+                slot = self.slots[i]
                 if slot != None:
                     slot(event)
                 else:
-                    del self.slots[sid]
+                    del self.slots[i]
             self.blocked = False
     
     def __iadd__(self, slot):
@@ -67,32 +67,38 @@ class Signal(object):
         
     def connect(self, slot):
         self.disconnect(slot)
-        sid = id(slot)
         if inspect.ismethod(slot):
-            wref = WeakMethod(slot)
+            self.slots.append(WeakMethod(slot))
         else:
             o = _WeakMethod_FuncHost(slot)
             if isinstance(slot, Signal):
                 wref = WeakChainMethod(self, o.func)
             else:
                 wref = WeakMethod(o.func)
+            self.slots.append(wref)
             # we stick a copy in here just to keep the instance alive
-            self.funchost[sid] = o
-        self.slots[sid] = wref
-            
+            self.funchost.append(o)
 
     def disconnect(self, slot):
-        sid = id(slot)
         try:
-            del self.slots[sid]
+            for i in range(len(self.slots)):
+                wm = self.slots[i]
+                if inspect.ismethod(slot):
+                    if wm.f == slot.im_func and wm.c() == slot.im_self:
+                        del self.slots[i]
+                        return
+                else:
+                    if wm.c().hostedFunction == slot:
+                        del self.slots[i]
+                        return
         except:
             pass
 
     def disconnectAll(self):
         del self.slots
         del self.funchost
-        self.slots = OrderedDict()
-        self.funchost = {}
+        self.slots = []
+        self.funchost = []
 
 class _WeakMethod_FuncHost:
     def __init__(self, func):
@@ -154,9 +160,7 @@ class SignalGroup(Signal):
     
     def __getitem__(self, key):
         return self.__signal_names[key]
-
-#### 1
-'''
+    
 a = Signal()
 
 events =[]
@@ -165,16 +169,3 @@ for x in range(0,1000):
     events.append(s)
     a.connect(s)
 print 'done'
-#'''
-   
-#### 2
-''' 
-a = Signal()
-b = Signal()
-c = Signal()
-a += b
-b += c 
-for x in range(0,100000):
-    a()
-print 'done'
-#'''
