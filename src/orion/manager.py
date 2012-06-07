@@ -11,7 +11,7 @@ from orion.wm.screen import Screen
 from orion.wm.window.window import Window
 from orion.signals import Signal
 from pyutilib.component.core import ExtensionPoint
-from orion.wm.display.comm.api import IDisplayServerCommunicator
+from orion.wm.comm.api import IDisplayServerCommunicator
 #import command
 
 import logging
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 ################# DEBUG #################
 
-from orion.wm.display.comm.xorg import xorg
+from orion.wm.comm.xorg import xorg
 
 
 ################# DEBUG #################
@@ -470,7 +470,7 @@ class Orion(object):
         
         self.conn.flush()
         self.conn.xsync()
-        self._xpoll()
+        self.conn.xpoll()
         if self._exit:
             print >> sys.stderr, "Access denied: Another window manager running?"
             sys.exit(1)
@@ -766,6 +766,7 @@ class Orion(object):
             logger.debug("Unknown event: %r"%ename)
         return chain
 
+    '''
     def _xpoll(self, conn=None, cond=None):
         eventEvents = [
             "EnterNotify",
@@ -785,11 +786,7 @@ class Orion(object):
 
             #ename = e.__class__.__name__
             e.name = e.__class__.__name__
-            '''
-            if ename.endswith("Event"):
-                print '!!!!!!!', ename
-                ename = ename[:-5]
-            '''
+            print '>>>>>>>', e.name
              
             if not e.__class__ in self.ignoreEvents:
                 window = None
@@ -805,11 +802,12 @@ class Orion(object):
                 
                 window.handle_event(e)
         return True
-
+    '''
+    
     def loop(self):
 
         #self.server.start()
-        display_tag = gobject.io_add_watch(self.conn.conn.get_file_descriptor(), gobject.IO_IN, self._xpoll)
+        display_tag = gobject.io_add_watch(self.conn.conn.get_file_descriptor(), gobject.IO_IN, self.conn.xpoll)
         try:
             context = gobject.main_context_default()
             while True:

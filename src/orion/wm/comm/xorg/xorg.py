@@ -1,6 +1,6 @@
 from pyutilib.component.core import ExtensionPoint
 from pyutilib.component.core import implements, SingletonPlugin
-from orion.wm.display.comm.api import IDisplayServerCommunicator
+from orion.wm.comm.api import IDisplayServerCommunicator
 from ext.api import IXorgExtension
 
 import struct
@@ -14,6 +14,8 @@ from orion.wm.window import icccm
 
 from orion.wm.window.window import Window
 from orion.xcbq import AtomCache
+from orion.utils import typedPack
+from orion.signals import Signal
 
 class _Wrapper:
     def __init__(self, wrapped):
@@ -56,6 +58,18 @@ class Colormap:
 
 class Xorg(SingletonPlugin):
     implements(IDisplayServerCommunicator)
+    
+    def __init__(self):
+        self.events = typedPack(
+            'property', 
+            'unmap', 
+            'destroy', 
+            'enter',
+            'leave',
+            'key_press',
+            'key_release',
+            type = Signal
+        )
     
     def init(self, display, qtile):
         self.conn = xcb.xcb.connect(display=display)
@@ -189,3 +203,49 @@ class Xorg(SingletonPlugin):
     @property
     def extensions(self):
         return self.__extensions
+    
+    def xpoll(self, conn=None, cond=None):
+        eventEvents = [
+            "EnterNotify",
+            "ButtonPress",
+            "ButtonRelease",
+            "KeyPress",
+        ]
+        
+        while True:
+            e = self.conn.poll_for_event()
+            if not e:
+                break
+            # This should be done in xpyb
+            # client mesages start at 128
+            if e.response_type >= 128:
+                e = xcb.xproto.ClientMessageEvent(e)
+
+            e.name = e.__class__.__name__
+            print '>>>>>>>>>>', e.name
+             
+            if not e.__class__ in []:#self.ignoreEvents:
+                window = None
+                if hasattr(e, "window"):
+                    print '[1]'
+                    window = e.window
+                elif hasattr(e, "drawable"):
+                    print '[2]'
+                    window = e.drawable
+                elif e.name in eventEvents:
+                    print '[3]'
+                    window = e.event
+                else:
+                    print '[4]'
+                e.window = window
+                
+            if e.name == 'KeyPressEvent':
+                e.keycode = self.code_to_syms[e.detail][0]
+                e.wid = None
+                self.events.key_press(event=e)
+            if e.name == 'KeyReleaseEvent':
+                e.keycode = self.code_to_syms[e.detail][0]
+                e.wid = None
+                self.events.key_release(event=e)
+                
+        return True

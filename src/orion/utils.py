@@ -55,6 +55,14 @@ class pack(object):
         for key, val in kwargs.items():
             setattr(self, key, val)
 
+
+class typedPack(object):
+    def __init__(self, *args, **kwargs):
+        type = kwargs.get('type', None)
+        assert type
+        for arg in args:
+            setattr(self, arg, type())
+
 #############################################
 
 

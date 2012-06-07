@@ -10,8 +10,9 @@ class Event(object):
     
     def __str__(self):
         return 'Event '+str(self.__dict__)
-    
-class Signal:
+
+
+class Signal(object):
     def __init__(self):
         stack = inspect.stack()
         frame = stack[1][0]
@@ -31,8 +32,11 @@ class Signal:
 
     def __call__(self, *args, **kwargs):
         baseEvent = kwargs.pop('event',None)
-        vardict = vars(baseEvent) if baseEvent else {}
-        vardict.update(kwargs)
+        if baseEvent:
+            vardict = vars(baseEvent)
+            vardict.update(kwargs)
+        else:
+            vardict = kwargs
         event = Event(*args, target=self.__target, **vardict)
         self.chainCall(event)
                 
@@ -103,12 +107,58 @@ class WeakChainMethod(WeakMethod):
         self.c().hostedFunction.chainCall(event)
         
         
+class SignalGroup(Signal):
+    def __init__(self, *names):
+        Signal.__init__(self)
+        self.__signals = {}
+        self._in = Signal()
+        self._out = Signal()
+        self._in.connect(self._out)
+        self._out.connect(self.xxx)
+        for name in names:
+            if name not in self.__signals:
+                signal = Signal()
+                self.__signals[name] = signal
+                setattr(self, name, signal)
+                signal.connect(self._out)
+                self._in.connect(signal)
+    
+    
+    def __call__(self, *args, **kwargs):
+        self._in.__call__(self, *args, **kwargs)
         
+    def chainCall(self, event):
+        print '!'
         
-        
-        
-        
-        
+    def xxx(self, e):
+        print '!xxx'
+    
+    def connect_by_name(self, dst):
+        assert isinstance(dst, SignalGroup)
+        for name, signal in self.__signals.iteritems():
+            try:
+                dst_signal = dst[name]
+            except: continue
+            signal.connect(dst_signal)
+    
+    def __getitem__(self, key):
+        return self.__signals[key]
+    
+    
+def f(e):
+    print 'f!'
+    
+def g(e):
+    print 'g!'
+    
+    
+a = SignalGroup('x', 'y', 'z')
+b = SignalGroup('x', 'y', 'z')
+
+a.connect(b)
+b.connect(f)
+
+a()
         
         
         
