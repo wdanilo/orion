@@ -13,7 +13,7 @@ from orion.utils import flagEnum, enum
 from icccm import wmState
 import icccm
 from xcb.xproto import CW
-from orion.signals import Signal
+from orion.signals import SignalGroup
 # float states
 floatStates = enum(
         'NOT_FLOATING',
@@ -446,18 +446,21 @@ class Window(_BaseWindow):
         self.qtile = qtile
         self.conn, self.wid = conn, wid
         
-        self.on_mouse_enter         = Signal()
-        self.on_key_press           = Signal()
-        self.on_key_release         = Signal()
-        self.on_map_request         = Signal()
-        self.on_destroy_notify      = Signal()
-        self.on_property_notify     = Signal()
-        self.on_client_message      = Signal()
-        self.on_configure_request   = Signal()
-        self.on_configure_notify    = Signal()
+        self.events = SignalGroup(
+            'on_create',        
+            'on_mouse_enter',        
+            'on_key_press',        
+            'on_key_release',        
+            'on_map_request',        
+            'on_destroy_notify',        
+            'on_property_notify',        
+            'on_client_message',        
+            'on_configure_request',        
+            'on_configure_notify',        
+        )
         
-        self.on_property_notify.connect(self.handle_PropertyNotify)
-        self.on_configure_request.connect(self.handle_ConfigureRequest)
+        self.events.on_property_notify.connect(self.handle_PropertyNotify)
+        self.events.on_configure_request.connect(self.handle_ConfigureRequest)
         #self.on_mouse_enter.connect(self.handle_EnterNotify)
 
     def _propertyString(self, r):

@@ -242,10 +242,10 @@ class Xorg(SingletonPlugin):
             if e.name == 'KeyPressEvent':
                 e.keycode = self.code_to_syms[e.detail][0]
                 e.wid = None
-                self.events.key_press(event=e)
+                self.events.key_press(self, event=e)
             if e.name == 'KeyReleaseEvent':
                 e.keycode = self.code_to_syms[e.detail][0]
                 e.wid = None
-                self.events.key_release(event=e)
+                self.events.key_release(self, event=e)
                 
         return True

@@ -9,7 +9,7 @@ import utils, hook
 from orion.wm.window import window
 from orion.wm.screen import Screen
 from orion.wm.window.window import Window
-from orion.signals import Signal
+from orion.signals import SignalGroup
 from pyutilib.component.core import ExtensionPoint
 from orion.wm.comm.api import IDisplayServerCommunicator
 #import command
@@ -392,8 +392,10 @@ class Orion(object):
         self.fname = fname
         '''
         
-        self.on_screen_create = Signal()
-        self.on_window_create = Signal()
+        self.events = SignalGroup(
+            'on_screen_create',
+            'on_window_create',
+        )
         
         self.displayServers = ExtensionPoint(IDisplayServerCommunicator)
         
@@ -417,10 +419,10 @@ class Orion(object):
         # Because we only do Xinerama multi-screening, we can assume that the first
         # screen's root is _the_ root.
         self.root = self.conn.default_screen.root
-        self.on_screen_create(screen=self.root)
-        self.root.on_map_request.connect(self.handle_MapRequest)
-        self.root.on_destroy_notify.connect(self.handle_DestroyNotify)
-        self.root.on_configure_request.connect(self.handle_ConfigureRequest)
+        self.events.on_screen_create(self, screen=self.root)
+        self.root.events.on_map_request.connect(self.handle_MapRequest)
+        self.root.events.on_destroy_notify.connect(self.handle_DestroyNotify)
+        self.root.events.on_configure_request.connect(self.handle_ConfigureRequest)
         hook.screen.on_configure_notify.connect(self.handle_ConfigureNotify)
         
         self.root.set_attribute(

@@ -1,20 +1,13 @@
 from weakref import ref
 import inspect
+import sys
+from copy import copy
 
 class Event(object):
     def __init__(self, *args, **kwargs):
-        self.__kwargs = kwargs
-        self.__args = args
-            
-    def __getattr__(self, name):
-        return self.__kwargs[name]
-    
-    @property
-    def args(self):
-        return self.__args
-    
-    def copy(self):
-        return Event(*self.args, **self.__kwargs)
+        self.args = args
+        for key, val in kwargs.items():
+            setattr(self, key, val)
     
     def __str__(self):
         return 'Event '+str(self.__dict__)
@@ -32,21 +25,36 @@ class Signal(object):
         # non-method slots that we've created.
         self.funchost = []
 
-    def __call__(self, target, *args, **kwargs):
+    def __call__(self, *args, **kwargs):
         baseEvent = kwargs.pop('event',None)
         if baseEvent:
             vardict = vars(baseEvent)
             vardict.update(kwargs)
         else:
             vardict = kwargs
-        event = Event(*args, target=target, currentTarget=target, **vardict)
-        self._call(event)
-
-    def chainCall(self, target, event):
-        event.currentTarget = target
-        self._call(event)
+        
+        currentTarget = self.current_target()
+        target = kwargs.get('target', None)
+        if not target: target = currentTarget
+        event = Event(*args, target=target, currentTarget=currentTarget, **vardict)
+        self.__call(event)
+        
+                
+    def chainCall(self, event):
+        event.currentTarget = self.current_target(3)
+        self.__call(event)
     
-    def _call(self, event):
+    def current_target(self, offset=2):
+        stack = inspect.stack()
+        frame = stack[offset][0]
+        flocals = frame.f_locals
+        target = flocals.get('self', None)
+        if not target:
+            modname = flocals.get('__name__', None)
+            if modname: target = sys.modules[modname]
+        return target
+    
+    def __call(self, event):
         if not self.blocked:
             self.blocked = True
             for i in range(len(self.slots)):
@@ -72,7 +80,7 @@ class Signal(object):
         else:
             o = _WeakMethod_FuncHost(slot)
             if isinstance(slot, Signal):
-                wref = WeakChainMethod(self, o.func)
+                wref = WeakChainMethod(o.func)
             else:
                 wref = WeakMethod(o.func)
             self.slots.append(wref)
@@ -116,47 +124,83 @@ class WeakMethod:
         self.f(self.c(), *args, **kwargs)
         
 class WeakChainMethod(WeakMethod):
-    def __init__(self, target, f):
-        self.target = target
-        WeakMethod.__init__(self, f)
     def __call__(self, event):
-        self.c().hostedFunction.chainCall(self.target, event.copy())
- 
- 
+        self.c().hostedFunction.chainCall(copy(event))
+        
+
+'''
+def f(e):
+    print 'F: ',e.target, e.currentTarget
+    
+def g(e):
+    print 'G: ',e.target, e.currentTarget
+    
+        
+a = Signal()
+b = Signal()
+
+
+a += b
+a += f
+b += g
+
+class A():
+    def __init__(self):
+        a()
+x= A()
+#'''
+        
 class SignalGroup(Signal):
     def __init__(self, *names):
         Signal.__init__(self)
-        self.__signal_names = {}
         self.__signals = {}
+        
+        self.q = {}
         for name in names:
-            if name not in self.__signal_names:
+            if name not in self.__signals:
                 signal = Signal()
-                self.__signal_names[name] = signal
-                self.__signals[signal] = True
+                self.__signals[name] = signal
+                self.q[signal] = True
                 setattr(self, name, signal)
                 signal.connect(self)
-                
-    def _call(self, event):
-        if not self.blocked:
-            self.blocked = True
-            if not event.currentTarget in self.__signals:
-                for slot in self.__signals:
-                    slot.chainCall(self, event)
-            for i in range(len(self.slots)):
-                slot = self.slots[i]
-                if slot != None:
-                    slot(event)
-                else:
-                    del self.slots[i]
-            self.blocked = False
+                self.connect(signal)
+    
+    def chainCall(self, event):
+        currentTarget = self.current_target(3)
+        if not currentTarget in self.q:
+            event.currentTarget = currentTarget
+            self._Signal__call(event)
+            for signal in self.q:
+                signal.chainCall(copy(event))
     
     def connect_by_name(self, dst):
         assert isinstance(dst, SignalGroup)
-        for name, signal in self.__signal_names.iteritems():
+        for name, signal in self.__signals.iteritems():
             try:
                 dst_signal = dst[name]
             except: continue
             signal.connect(dst_signal)
     
     def __getitem__(self, key):
-        return self.__signal_names[key]
+        return self.__signals[key]
+   
+def f(e):
+    print 'f!'
+    
+def g(e):
+    print 'g!'
+    
+    
+a = SignalGroup('x', 'y', 'z')
+b = SignalGroup('x', 'y', 'z')
+
+print 'a', id(a)
+print 'b', id(b)
+
+a.x.connect(b)
+#a.y.connect(g)
+b.connect(f)
+
+a.x()
+        
+#'''     
