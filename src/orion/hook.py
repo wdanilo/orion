@@ -10,29 +10,29 @@ logger = logging.getLogger(__name__)
 from orion.signals import Signal, SignalGroup
 
 window = SignalGroup(
-    'on_create',        
-    'on_mouse_enter',        
-    'on_key_press',        
-    'on_key_release',        
-    'on_map_request',        
-    'on_destroy_notify',        
-    'on_property_notify',        
-    'on_client_message',        
-    'on_configure_request',        
-    'on_configure_notify',        
+    'create',        
+    'mouse_enter',        
+    'key_press',        
+    'key_release',        
+    'map_request',        
+    'destroy_notify',        
+    'property_notify',        
+    'client_message',        
+    'configure_request',        
+    'configure_notify',        
 )
 
 screen = SignalGroup(
-    'on_create',
-    'on_mouse_enter',
-    'on_key_press',
-    'on_key_release',
-    'on_map_request',
-    'on_destroy_notify',
-    'on_property_notify',
-    'on_client_message',
-    'on_configure_request',
-    'on_configure_notify',
+    'create',
+    'mouse_enter',
+    'key_press',
+    'key_release',
+    'map_request',
+    'destroy_notify',
+    'property_notify',
+    'client_message',
+    'configure_request',
+    'configure_notify',
 )
 
 def test_terminal(e):
@@ -44,8 +44,8 @@ def f(e):
     print e.target
     print e.currentTarget
     
-window.on_mouse_enter.connect(f)
-screen.on_key_press.connect(test_terminal)
+window.mouse_enter.connect(f)
+screen.key_press.connect(test_terminal)
 
 def manage_window(e):
     e.window.events.connect_by_name(window)
@@ -54,10 +54,10 @@ def manage_screen(e):
     e.screen.events.connect_by_name(screen)
 
 def init(orion):
-    orion.events.on_window_create.connect(window.on_create)
-    orion.events.on_window_create.connect(manage_window)
-    orion.events.on_screen_create.connect(screen.on_create)
-    orion.events.on_screen_create.connect(manage_screen)
+    orion.events.window_create.connect(window.create)
+    orion.events.window_create.connect(manage_window)
+    orion.events.screen_create.connect(screen.create)
+    orion.events.screen_create.connect(manage_screen)
 
 
 def clear():

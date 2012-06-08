@@ -447,20 +447,20 @@ class Window(_BaseWindow):
         self.conn, self.wid = conn, wid
         
         self.events = SignalGroup(
-            'on_create',        
-            'on_mouse_enter',        
-            'on_key_press',        
-            'on_key_release',        
-            'on_map_request',        
-            'on_destroy_notify',        
-            'on_property_notify',        
-            'on_client_message',        
-            'on_configure_request',        
-            'on_configure_notify',        
+            'create',        
+            'mouse_enter',        
+            'key_press',        
+            'key_release',        
+            'map_request',        
+            'destroy_notify',        
+            'property_notify',        
+            'client_message',        
+            'configure_request',        
+            'configure_notify',        
         )
         
-        self.events.on_property_notify.connect(self.handle_PropertyNotify)
-        self.events.on_configure_request.connect(self.handle_ConfigureRequest)
+        self.events.property_notify.connect(self.handle_PropertyNotify)
+        self.events.configure_request.connect(self.handle_ConfigureRequest)
         #self.on_mouse_enter.connect(self.handle_EnterNotify)
 
     def _propertyString(self, r):

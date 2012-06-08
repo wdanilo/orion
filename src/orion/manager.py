@@ -393,14 +393,18 @@ class Orion(object):
         '''
         
         self.events = SignalGroup(
-            'on_screen_create',
-            'on_window_create',
+            'screen_create',
+            'window_create',
+            'key_press',
+            'key_release',
         )
         
         self.displayServers = ExtensionPoint(IDisplayServerCommunicator)
         
         self.conn = self.displayServers()[0]
         self.conn.init(displayName, self)
+        self.conn.events.key_press += self.events.key_press
+        self.conn.events.key_release += self.events.key_release
         self.config = config
         hook.init(self)
 
@@ -419,11 +423,11 @@ class Orion(object):
         # Because we only do Xinerama multi-screening, we can assume that the first
         # screen's root is _the_ root.
         self.root = self.conn.default_screen.root
-        self.events.on_screen_create(self, screen=self.root)
-        self.root.events.on_map_request.connect(self.handle_MapRequest)
-        self.root.events.on_destroy_notify.connect(self.handle_DestroyNotify)
-        self.root.events.on_configure_request.connect(self.handle_ConfigureRequest)
-        hook.screen.on_configure_notify.connect(self.handle_ConfigureNotify)
+        self.events.screen_create(self, screen=self.root)
+        self.root.events.map_request.connect(self.handle_MapRequest)
+        self.root.events.destroy_notify.connect(self.handle_DestroyNotify)
+        self.root.events.configure_request.connect(self.handle_ConfigureRequest)
+        hook.screen.configure_notify.connect(self.handle_ConfigureNotify)
         
         self.root.set_attribute(
             eventmask = EventMask.StructureNotify |\
