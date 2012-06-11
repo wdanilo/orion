@@ -1,4 +1,4 @@
-from orion.manager import Group
+from orion.wm.nebula.manager import Group
 from orion.wm.screen import Screen
 from orion import layout
 

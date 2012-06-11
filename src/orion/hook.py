@@ -1,4 +1,3 @@
-import manager
 from orion.utils import pack
 
 subscriptions = {}
