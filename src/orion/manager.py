@@ -12,6 +12,7 @@ from orion.wm.window.window import Window
 from orion.signals import SignalGroup
 from pyutilib.component.core import ExtensionPoint
 from orion.wm.comm.api import IDisplayServerCommunicator
+from orion.accessibility import Accessibility
 #import command
 
 import logging
@@ -397,14 +398,11 @@ class Orion(object):
             'window_create',
             'key_press',
             'key_release',
+            'window_create',
         )
         
         self.displayServers = ExtensionPoint(IDisplayServerCommunicator)
-        
-        self.conn = self.displayServers()[0]
-        self.conn.init(displayName, self)
-        self.conn.events.key_press += self.events.key_press
-        self.conn.events.key_release += self.events.key_release
+        self.handle_display_server(self.displayServers()[0], displayName)
         self.config = config
         hook.init(self)
 
@@ -414,7 +412,7 @@ class Orion(object):
         self.groupMap = {}
         self.groups = []
         self.keyMap = {}
-
+        
         # Find the modifier mask for the numlock key, if there is one:
         nc = self.conn.keysym_to_keycode(xcbq.keysyms["Num_Lock"])
         self.numlockMask = window.proto.ModMasks[self.conn.get_modifier(nc)]
@@ -424,7 +422,6 @@ class Orion(object):
         # screen's root is _the_ root.
         self.root = self.conn.default_screen.root
         self.events.screen_create(self, screen=self.root)
-        self.root.events.map_request.connect(self.handle_MapRequest)
         self.root.events.destroy_notify.connect(self.handle_DestroyNotify)
         self.root.events.configure_request.connect(self.handle_ConfigureRequest)
         hook.screen.configure_notify.connect(self.handle_ConfigureNotify)
@@ -508,6 +505,13 @@ class Orion(object):
         hook.fire("startup")
 
         self.scan()
+    
+    def handle_display_server(self, server, display):
+        self.conn = server
+        self.conn.init(display, self)
+        self.conn.events.key_press += self.events.key_press
+        self.conn.events.key_release += self.events.key_release
+        self.conn.events.map_request += self.__handle_map_request
 
     def _process_screens(self):
         for screen in self.conn.pseudoscreens:
@@ -689,7 +693,7 @@ class Orion(object):
                 try:
                     c = w
                     c.xxx(self)
-                    self.on_window_create(window=c)
+                    self.events.window_create(window=c)
                     #c = window.Window(w, self)
                 except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
                     return
@@ -1035,8 +1039,8 @@ class Orion(object):
         if e.request == xcb.xproto.Mapping.Keyboard:
             self.grabKeys()
 
-    def handle_MapRequest(self, e):
-        w = Window(self.conn, e.window, self)
+    def __handle_map_request(self, e):
+        w = Window(self.conn, e.wid, self)
         c = self.manage(w)
         if c and (not c.group or not c.group.screen):
             return

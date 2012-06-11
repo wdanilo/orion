@@ -60,6 +60,7 @@ class Xorg(SingletonPlugin):
     implements(IDisplayServerCommunicator)
     
     def __init__(self):
+        self.name = 'xorg'
         self.events = typedPack(
             'property', 
             'unmap', 
@@ -68,6 +69,11 @@ class Xorg(SingletonPlugin):
             'leave',
             'key_press',
             'key_release',
+            'create_notify',
+            'destroy_notify',
+            'message',
+            'configure_request',
+            'map_request',
             type = Signal
         )
     
@@ -240,12 +246,36 @@ class Xorg(SingletonPlugin):
                 e.window = window
                 
             if e.name == 'KeyPressEvent':
-                e.keycode = self.code_to_syms[e.detail][0]
-                e.wid = None
-                self.events.key_press(self, event=e)
-            if e.name == 'KeyReleaseEvent':
-                e.keycode = self.code_to_syms[e.detail][0]
-                e.wid = None
-                self.events.key_release(self, event=e)
+                self.events.key_press(self,
+                    keycode = self.code_to_syms[e.detail][0],
+                    wid = None,
+                )
+                import subprocess
+                subprocess.Popen('gnome-terminal')
+            elif e.name == 'KeyReleaseEvent':
+                self.events.key_release(self,
+                    keycode = self.code_to_syms[e.detail][0],
+                    wid = None,
+                )
+            elif e.name == 'CreateNotifyEvent':
+                self.events.create_notify(self,
+                    wid = e.window,
+                )
+            elif e.name == 'DestroyNotifyEvent':
+                self.events.destroy_notify(self,
+                    wid = e.window,
+                )
+            elif e.name == 'ClientMessageEvent':
+                self.events.message(self,
+                    wid = e.window,
+                )
+            elif e.name == 'ConfigureRequestEvent':
+                self.events.configure_request(self,
+                    wid = e.window,
+                )
+            elif e.name == 'MapRequestEvent':
+                self.events.map_request(self,
+                    wid = e.window,
+                )
                 
         return True
