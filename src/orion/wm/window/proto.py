@@ -1,17 +1,5 @@
 from orion.utils import flagEnum, enum
 
-# These should be in xpyb:
-ModMasks = flagEnum (
-    'shift',
-    'lock',
-    'control',
-    'mod1',
-    'mod2',
-    'mod3',
-    'mod4',
-    'mod5',               
-)
-
 ButtonCodes = enum (
     'Button1',
     'Button2',

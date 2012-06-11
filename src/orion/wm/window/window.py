@@ -737,7 +737,9 @@ class Window(_BaseWindow):
             modifiers = xcb.xproto.ModMask.Any
         self.conn.conn.core.UngrabKey(key, self.wid, modifiers)
 
-    def grab_key(self, key, modifiers, owner_events, pointer_mode, keyboard_mode):
+    def grab_key(self, key, modifiers, owner_events):
+        pointer_mode = xcb.xproto.GrabMode.Async
+        keyboard_mode = xcb.xproto.GrabMode.Async
         self.conn.conn.core.GrabKey(
             owner_events,
             self.wid,

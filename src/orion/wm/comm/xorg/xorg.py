@@ -7,10 +7,11 @@ import struct
 import xcb.xproto, xcb.xinerama, xcb.randr, xcb.xcb
 from xcb.xproto import CW, WindowClass, EventMask
 from orion import utils
-from orion.wm.keyboard import xkeysyms
+from keyboard import xkeysyms
 
 from orion.wm.window import proto
 from orion.wm.window import icccm
+from orion.wm.comm.xorg import keyboard
 
 from orion.wm.window.window import Window
 from atom import AtomCache
@@ -142,7 +143,7 @@ class Xorg(SingletonPlugin):
     def refresh_modmap(self):
         q = self.conn.core.GetModifierMapping().reply()
         modmap = {}
-        mods = proto.ModMasks.keys()
+        mods = keyboard.modmasks.keys()
         for i, k in enumerate(q.keycodes):
             l = modmap.setdefault(mods[i/q.keycodes_per_modifier], [])
             l.append(k)
@@ -201,6 +202,18 @@ class Xorg(SingletonPlugin):
         fid = self.conn.generate_id()
         self.conn.core.OpenFont(fid, len(name), name)
         return Font(self, fid)
+    
+    def grap_keys(self, key, modifiers=[]):
+        pointer_mode = xcb.xproto.GrabMode.Async
+        keyboard_mode = xcb.xproto.GrabMode.Async
+        self.conn.core.GrabKey(
+            owner_events,
+            self.wid,
+            modifiers,
+            key,
+            pointer_mode,
+            keyboard_mode
+        )
 
     @property
     def extension_list(self):

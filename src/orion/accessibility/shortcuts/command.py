@@ -1,3 +1,5 @@
+import inspect
+
 class Command(object):
     class _Attrib(object):
         def __init__(self, name):
@@ -38,3 +40,4 @@ class Command(object):
         cmd_locals = stack[1][0].f_locals
         cmd_globals = stack[1][0].f_globals
         return Command._Body(name, cmd_locals=cmd_locals, cmd_globals=cmd_globals)
+

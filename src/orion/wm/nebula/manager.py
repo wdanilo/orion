@@ -2,7 +2,7 @@ import atexit, datetime, subprocess, sys, os, traceback
 import select, contextlib
 import gobject
 #import xcbq
-from orion.wm import keyboard
+from orion.wm.comm.xorg import keyboard
 import xcb.xproto, xcb.xinerama
 import xcb
 from xcb.xproto import EventMask
@@ -13,7 +13,6 @@ from orion.wm.window.window import Window
 from orion.signals import SignalGroup
 from pyutilib.component.core import ExtensionPoint
 from orion.wm.comm.api import IDisplayServerCommunicator
-from orion.accessibility import Accessibility
 from pyutilib.component.core import implements, SingletonPlugin
 from orion.wm.api import IWindowManager
 #import command
@@ -420,12 +419,11 @@ class Nebula(SingletonPlugin):
         self.widgetMap = {}
         self.groupMap = {}
         self.groups = []
-        self.keyMap = {}
         
         # Find the modifier mask for the numlock key, if there is one:
         nc = self.conn.keysym_to_keycode(keyboard.keysyms["Num_Lock"])
-        self.numlockMask = window.proto.ModMasks[self.conn.get_modifier(nc)]
-        self.validMask = ~(self.numlockMask | window.proto.ModMasks["lock"])
+        self.numlockMask = keyboard.modmasks[self.conn.get_modifier(nc)]
+        self.validMask = ~(self.numlockMask | keyboard.modmasks["lock"])
 
         # Because we only do Xinerama multi-screening, we can assume that the first
         # screen's root is _the_ root.
@@ -489,22 +487,14 @@ class Nebula(SingletonPlugin):
 
         #self.server = command._Server(self.fname, self, config)
 
+        print '!!!!', type(self.root)
         self.root.grab_key(
             52,
             8,
             True,
-            xcb.xproto.GrabMode.Async,
-            xcb.xproto.GrabMode.Async,
         )
         
-        self.root.grab_key(
-            52,
-            0,
-            True,
-            xcb.xproto.GrabMode.Async,
-            xcb.xproto.GrabMode.Async,
-        )
-
+        
         self.mouseMap = {}
         for i in self.config.mouse:
             self.mouseMap[i.button_code] = i
