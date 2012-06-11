@@ -364,6 +364,7 @@ class _BaseWindow(object):
                     self.warp_pointer(self.width//2, self.height//2)
             except AttributeError:
                 pass
+        self.events.focus(self)
 
     def _items(self, name, sel):
         return None
@@ -454,7 +455,8 @@ class Window(_BaseWindow):
             'property_notify',        
             'client_message',        
             'configure_request',        
-            'configure_notify',        
+            'configure_notify',  
+            'focus',      
         )
         
         self.events.property_notify.connect(self.handle_PropertyNotify)

@@ -13,7 +13,7 @@ from orion.wm.window import proto
 from orion.wm.window import icccm
 
 from orion.wm.window.window import Window
-from orion.xcbq import AtomCache
+from atom import AtomCache
 from orion.utils import typedPack
 from orion.signals import Signal
 
