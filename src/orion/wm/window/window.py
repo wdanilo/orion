@@ -116,7 +116,6 @@ class _BaseWindow(object):
             self.name = self.get_name()
         except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
             return
-        hook.fire("window_name_change")
 
     def updateHints(self):
         """
@@ -365,7 +364,6 @@ class _BaseWindow(object):
                     self.warp_pointer(self.width//2, self.height//2)
             except AttributeError:
                 pass
-        hook.fire("client_focus", self)
 
     def _items(self, name, sel):
         return None

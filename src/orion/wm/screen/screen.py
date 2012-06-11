@@ -146,9 +146,6 @@ class Screen(object):
                 self.group._setScreen(None)
             self.group = new_group
             new_group._setScreen(self)
-        hook.fire("setgroup")
-        hook.fire("focus_change")
-        hook.fire("layout_change", self.group.layouts[self.group.currentLayout])
 
     def _items(self, name):
         if name == "layout":

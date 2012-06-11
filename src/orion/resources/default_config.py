@@ -10,6 +10,7 @@ groups = [
 
 layouts = [
     #layout.Max(),
+    layout.MonadTall(),
     layout.Stack(stacks=2)
 ]
 
