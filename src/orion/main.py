@@ -22,6 +22,7 @@ class Orion(object):
         manager_count = len(self.__window_managers)
         logger.debug('found %s orion window managers'%manager_count)
         manager = self.__window_managers()[0]
+        manager.init()
         logger.debug("starting '%s' window manager"%manager.name)
         manager.run()
         PluginGlobals.pop_env('orion')

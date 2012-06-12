@@ -380,9 +380,10 @@ class Nebula(SingletonPlugin):
     implements(IWindowManager)
     
     _exit = False
-    def __init__(self, displayName=None):
+    def __init__(self):
         self.name = 'nebula'
         
+    def init(self, displayName=None):
         if not displayName:
             displayName = os.environ.get("DISPLAY")
             if not displayName:
