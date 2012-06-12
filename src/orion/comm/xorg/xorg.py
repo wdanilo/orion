@@ -204,12 +204,13 @@ class Xorg(SingletonPlugin):
         self.conn.core.OpenFont(fid, len(name), name)
         return Font(self, fid)
     
-    def grap_keys(self, key, modifiers=[]):
+    def grab_key(self, key, modifiers=[], wid=0):
         pointer_mode = xcb.xproto.GrabMode.Async
         keyboard_mode = xcb.xproto.GrabMode.Async
+        owner_events = True
         self.conn.core.GrabKey(
             owner_events,
-            self.wid,
+            wid,
             modifiers,
             key,
             pointer_mode,

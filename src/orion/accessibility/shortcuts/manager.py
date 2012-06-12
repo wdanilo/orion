@@ -2,6 +2,7 @@ import inspect
 from pyutilib.component.core import implements, SingletonPlugin
 from orion.accessibility.api import IShortcutManager
 from command import Command
+import orion
 
 import logging
 logger = logging.getLogger(__name__)
@@ -14,8 +15,12 @@ class ShortcutManager(SingletonPlugin):
         
     def register(self, *args):
         keys = args[:-1]
-        command = args[-1] if args else None
+        key = keys[-1]
+        mods = keys[:-1]
+        command = args[-1]
         if not keys or not command:
             logger.error("Cannot register shortcut!")
+        print key, mods, command
+        #orion.conn.grab_key(key, mods)
         
     

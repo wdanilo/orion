@@ -1,5 +1,5 @@
-import atexit, datetime, subprocess, sys, os, traceback
-import select, contextlib
+import atexit, sys, os, traceback
+import contextlib
 import gobject
 #import xcbq
 import xcb.xproto, xcb.xinerama
@@ -401,7 +401,6 @@ class Nebula(SingletonPlugin):
         '''
         
         
-        
         #self.displayServers = ExtensionPoint(IDisplayServerCommunicator)
         #self.handle_display_server(self.displayServers()[0], displayName)
         
@@ -482,6 +481,7 @@ class Nebula(SingletonPlugin):
 
         #self.server = command._Server(self.fname, self, config)
 
+        
         print '!!!!', type(self.root)
         self.root.grab_key(
             52,

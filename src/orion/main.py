@@ -19,8 +19,6 @@ class Orion(object):
     def run(self):
         self.__accessibility_manager = AccessibilityManager()
         
-        self.DEBUG_TEST()
-        
         PluginGlobals.push_env('orion')
         l = Logger('orion', verbose=True)
         manager_count = len(self.__window_managers)
@@ -39,6 +37,7 @@ class Orion(object):
         manager.init()
         
         
+        self.DEBUG_TEST()
         
         logger.debug("starting '%s' window manager"%manager.name)
         manager.run()
