@@ -43,6 +43,12 @@ class flagEnum(object):
     def values(self):
         return self.__enums.values()
     
+    def mask(self, keys):
+        masks = []
+        for key in keys:
+            masks.append(self[key])
+        return reduce(operator.or_, masks) if masks else 0
+    
     def __iter__(self):
         return self.__enums.__iter__()
 

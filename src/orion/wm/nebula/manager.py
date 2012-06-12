@@ -385,25 +385,6 @@ class Nebula(SingletonPlugin):
         )
         
     def init(self):
-        displayName = os.environ.get("DISPLAY")
-        if not displayName:
-            raise 
-
-        '''
-        if not fname:
-            # Dots might appear in the host part of the display name
-            # during remote X sessions. Let's strip the host part first.
-            displayNum = displayName.partition(":")[2]
-            if not "." in displayNum:
-                displayName = displayName + ".0"
-            fname = comm.find_sockfile(displayName)
-        self.fname = fname
-        '''
-        
-        
-        #self.displayServers = ExtensionPoint(IDisplayServerCommunicator)
-        #self.handle_display_server(self.displayServers()[0], displayName)
-        
         config = default_config
         self.config = config
         hook.init(self)
@@ -472,33 +453,20 @@ class Nebula(SingletonPlugin):
             xcb.xproto.NoExposureEvent
         ])
         
-        orion.conn.flush()
-        orion.conn.xsync()
-        orion.conn.xpoll()
+        
         if self._exit:
             print >> sys.stderr, "Access denied: Another window manager running?"
             sys.exit(1)
 
         #self.server = command._Server(self.fname, self, config)
-
-        
-        print '!!!!', type(self.root)
-        self.root.grab_key(
-            52,
-            8,
-            True,
-        )
-        
         
         self.mouseMap = {}
         for i in self.config.mouse:
             self.mouseMap[i.button_code] = i
 
         self.grabMouse()
-
-
         self.scan()
-    
+        
     def handle_display_server(self, server, display):
         orion.conn = server
         orion.conn.init(display, self)
@@ -655,6 +623,7 @@ class Nebula(SingletonPlugin):
             if state and state[0] == window.wmState.WITHDRAWN:
                 continue
             self.manage(item)
+            
 
     def unmanage(self, win):
         c = self.windowMap.get(win)

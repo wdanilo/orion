@@ -24,6 +24,7 @@ class Orion(object):
         manager_count = len(self.__window_managers)
         logger.debug('found %s orion window managers'%manager_count)
         manager = self.__window_managers()[0]
+        self.__window_manager = manager
         
         displayName = os.environ.get("DISPLAY")
         if not displayName:
@@ -43,14 +44,14 @@ class Orion(object):
         manager.run()
         PluginGlobals.pop_env('orion')
         
-    def f(self):
-        print '!!!!'
-        
     def DEBUG_TEST(self):
         import subprocess
         sm = self.__accessibility_manager.shortcut_manager
         cmd = sm.cmd
-        sm.register('mod4', 'z', cmd.subprocess.Popen('gnome-terminal'))
+        sm.register('mod1', 'z', cmd.subprocess.Popen('gnome-terminal'))
+    
+    @property
+    def window_manager(self): return self.__window_manager
     
     @property
     def conn(self): return self.__conn

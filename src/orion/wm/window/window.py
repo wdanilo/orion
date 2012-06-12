@@ -737,16 +737,11 @@ class Window(_BaseWindow):
             modifiers = xcb.xproto.ModMask.Any
         self.conn.conn.core.UngrabKey(key, self.wid, modifiers)
 
-    def grab_key(self, key, modifiers, owner_events):
-        pointer_mode = xcb.xproto.GrabMode.Async
-        keyboard_mode = xcb.xproto.GrabMode.Async
-        self.conn.conn.core.GrabKey(
-            owner_events,
+    def grab_key(self, key, modifiers):
+        orion.conn.grab_key(
             self.wid,
-            modifiers,
             key,
-            pointer_mode,
-            keyboard_mode
+            modifiers,
         )
 
     def ungrab_button(self, button, modifiers):
@@ -797,6 +792,7 @@ class Window(_BaseWindow):
         if q.parent:
             parent = Window(self.conn, q.root, self.qtile)
         return root, parent, [Window(self.conn, i, self.qtile) for i in q.children]
+    
     
     
     #################

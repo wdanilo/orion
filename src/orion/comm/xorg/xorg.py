@@ -115,6 +115,10 @@ class Xorg(SingletonPlugin):
         # get modifier mapping
         self.modmap = None
         self.refresh_modmap()
+        
+        self.flush()
+        self.xsync()
+        self.xpoll()
 
     def refresh_keymap(self, first=None, count=None):
         if first is None:
@@ -204,18 +208,23 @@ class Xorg(SingletonPlugin):
         self.conn.core.OpenFont(fid, len(name), name)
         return Font(self, fid)
     
-    def grab_key(self, key, modifiers=[], wid=0):
+    def grab_key(self, wid, key, modifiers=[]):
         pointer_mode = xcb.xproto.GrabMode.Async
         keyboard_mode = xcb.xproto.GrabMode.Async
+        keysym = keyboard.keysyms[key]
+        keycode = self.keysym_to_keycode(keysym)
+        modmask = keyboard.modmasks.mask(modifiers)
+        
         owner_events = True
         self.conn.core.GrabKey(
             owner_events,
             wid,
-            modifiers,
-            key,
+            modmask,
+            keycode,
             pointer_mode,
             keyboard_mode
         )
+        self.flush()
 
     @property
     def extension_list(self):

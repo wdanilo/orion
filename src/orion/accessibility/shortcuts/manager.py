@@ -20,7 +20,6 @@ class ShortcutManager(SingletonPlugin):
         command = args[-1]
         if not keys or not command:
             logger.error("Cannot register shortcut!")
-        print key, mods, command
-        #orion.conn.grab_key(key, mods)
+        orion.window_manager.root.grab_key(key, mods)
         
     
