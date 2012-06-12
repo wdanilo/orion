@@ -9,7 +9,7 @@ from orion import utils
 from orion import hook
 
 from orion.utils import flagEnum, enum
-
+import orion
 from icccm import wmState
 import icccm
 from xcb.xproto import CW
@@ -438,7 +438,7 @@ class Window(_BaseWindow):
         self.update_name()
 
         # add window to the save-set, so it gets mapped when qtile dies
-        qtile.conn.conn.core.ChangeSaveSet(SetMode.Insert, self.wid)
+        orion.conn.conn.core.ChangeSaveSet(SetMode.Insert, self.wid)
     
     def __init__(self, conn, wid, qtile):
         _BaseWindow.__init__(self, qtile)

@@ -2,7 +2,6 @@ import atexit, datetime, subprocess, sys, os, traceback
 import select, contextlib
 import gobject
 #import xcbq
-from orion.wm.comm.xorg import keyboard
 import xcb.xproto, xcb.xinerama
 import xcb
 from xcb.xproto import EventMask
@@ -12,7 +11,7 @@ from orion.wm.screen import Screen
 from orion.wm.window.window import Window
 from orion.signals import SignalGroup
 from pyutilib.component.core import ExtensionPoint
-from orion.wm.comm.api import IDisplayServerCommunicator
+from orion.comm.api import IDisplayServerCommunicator
 from pyutilib.component.core import implements, SingletonPlugin
 from orion.wm.api import IWindowManager
 #import command
@@ -21,14 +20,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+import orion
 
-
-################# DEBUG #################
-
-from orion.wm.comm.xorg import xorg
-
-
-################# DEBUG #################
 
 
 class QtileError(Exception): pass
@@ -383,6 +376,14 @@ class Nebula(SingletonPlugin):
     def __init__(self):
         self.name = 'nebula'
         
+        self.events = SignalGroup(
+            'screen_create',
+            'window_create',
+            'key_press',
+            'key_release',
+            'window_create',
+        )
+        
     def init(self):
         displayName = os.environ.get("DISPLAY")
         if not displayName:
@@ -399,16 +400,10 @@ class Nebula(SingletonPlugin):
         self.fname = fname
         '''
         
-        self.events = SignalGroup(
-            'screen_create',
-            'window_create',
-            'key_press',
-            'key_release',
-            'window_create',
-        )
         
-        self.displayServers = ExtensionPoint(IDisplayServerCommunicator)
-        self.handle_display_server(self.displayServers()[0], displayName)
+        
+        #self.displayServers = ExtensionPoint(IDisplayServerCommunicator)
+        #self.handle_display_server(self.displayServers()[0], displayName)
         
         config = default_config
         self.config = config
@@ -421,13 +416,13 @@ class Nebula(SingletonPlugin):
         self.groups = []
         
         # Find the modifier mask for the numlock key, if there is one:
-        nc = self.conn.keysym_to_keycode(keyboard.keysyms["Num_Lock"])
-        self.numlockMask = keyboard.modmasks[self.conn.get_modifier(nc)]
-        self.validMask = ~(self.numlockMask | keyboard.modmasks["lock"])
+        nc = orion.conn.keysym_to_keycode(orion.conn.keyboard.keysyms["Num_Lock"])
+        self.numlockMask = orion.conn.keyboard.modmasks[orion.conn.get_modifier(nc)]
+        self.validMask = ~(self.numlockMask | orion.conn.keyboard.modmasks["lock"])
 
         # Because we only do Xinerama multi-screening, we can assume that the first
         # screen's root is _the_ root.
-        self.root = self.conn.default_screen.root
+        self.root = orion.conn.default_screen.root
         self.events.screen_create(self, screen=self.root)
         self.root.events.destroy_notify.connect(self.handle_DestroyNotify)
         self.root.events.configure_request.connect(self.handle_ConfigureRequest)
@@ -478,9 +473,9 @@ class Nebula(SingletonPlugin):
             xcb.xproto.NoExposureEvent
         ])
         
-        self.conn.flush()
-        self.conn.xsync()
-        self.conn.xpoll()
+        orion.conn.flush()
+        orion.conn.xsync()
+        orion.conn.xpoll()
         if self._exit:
             print >> sys.stderr, "Access denied: Another window manager running?"
             sys.exit(1)
@@ -505,14 +500,14 @@ class Nebula(SingletonPlugin):
         self.scan()
     
     def handle_display_server(self, server, display):
-        self.conn = server
-        self.conn.init(display, self)
-        self.conn.events.key_press += self.events.key_press
-        self.conn.events.key_release += self.events.key_release
-        self.conn.events.map_request += self.__handle_map_request
+        orion.conn = server
+        orion.conn.init(display, self)
+        orion.conn.events.key_press += self.events.key_press
+        orion.conn.events.key_release += self.events.key_release
+        orion.conn.events.map_request += self.__handle_map_request
 
     def _process_screens(self):
-        for screen in self.conn.pseudoscreens:
+        for screen in orion.conn.pseudoscreens:
             self.screens.append(screen)
         if not self.screens:
             s = Screen()
@@ -520,13 +515,13 @@ class Nebula(SingletonPlugin):
             s._configure(
                 self,
                 0, 0, 0,
-                self.conn.default_screen.width_in_pixels,
-                self.conn.default_screen.height_in_pixels,
+                orion.conn.default_screen.width_in_pixels,
+                orion.conn.default_screen.height_in_pixels,
                 self.groups[0],
             )
             self.screens.append(s)
         '''
-        for i, s in enumerate(self.conn.pseudoscreens):
+        for i, s in enumerate(orion.conn.pseudoscreens):
             if i+1 > len(self.config.screens):
                 scr = Screen()
             else:
@@ -553,8 +548,8 @@ class Nebula(SingletonPlugin):
             s._configure(
                 self,
                 0, 0, 0,
-                self.conn.default_screen.width_in_pixels,
-                self.conn.default_screen.height_in_pixels,
+                orion.conn.default_screen.width_in_pixels,
+                orion.conn.default_screen.height_in_pixels,
                 self.groups[0],
             )
             self.screens.append(s)
@@ -562,7 +557,7 @@ class Nebula(SingletonPlugin):
             
     def mapKey(self, key):
         self.keyMap[(key.keysym, key.modmask&self.validMask)] = key
-        code = self.conn.keysym_to_keycode(key.keysym)
+        code = orion.conn.keysym_to_keycode(key.keysym)
         self.root.grab_key(
             code,
             key.modmask,
@@ -591,7 +586,7 @@ class Nebula(SingletonPlugin):
         if not key_index in self.keyMap:
             return
 
-        code = self.conn.keysym_to_keycode(key.keysym)
+        code = orion.conn.keysym_to_keycode(key.keysym)
         self.root.ungrab_key(
             code,
             key.modmask)
@@ -632,7 +627,7 @@ class Nebula(SingletonPlugin):
 
     @utils.LRUCache(200)
     def colorPixel(self, name):
-        return self.conn.screens[0].default_colormap.alloc_color(name).pixel
+        return orion.conn.screens[0].default_colormap.alloc_color(name).pixel
 
     @property
     def currentLayout(self):
@@ -773,7 +768,7 @@ class Nebula(SingletonPlugin):
         ]
         
         while True:
-            e = self.conn.conn.poll_for_event()
+            e = orion.conn.conn.poll_for_event()
             if not e:
                 break
             # This should be done in xpyb
@@ -804,14 +799,14 @@ class Nebula(SingletonPlugin):
     def run(self):
 
         #self.server.start()
-        display_tag = gobject.io_add_watch(self.conn.conn.get_file_descriptor(), gobject.IO_IN, self.conn.xpoll)
+        display_tag = gobject.io_add_watch(orion.conn.conn.get_file_descriptor(), gobject.IO_IN, orion.conn.xpoll)
         try:
             context = gobject.main_context_default()
             while True:
                 if context.iteration(True):
                     try:
                         # this seems to be crucial part
-                        self.conn.flush()
+                        orion.conn.flush()
 
                     # Catch some bad X exceptions. Since X is event based, race
                     # conditions can occur almost anywhere in the code. For
@@ -907,7 +902,7 @@ class Nebula(SingletonPlugin):
         subprocess.Popen('gnome-terminal')
         return
         '''
-        keysym = self.conn.code_to_syms[e.detail][0]
+        keysym = orion.conn.code_to_syms[e.detail][0]
         state = e.state
         if self.numlockMask:
             state = e.state | self.numlockMask
@@ -1018,16 +1013,16 @@ class Nebula(SingletonPlugin):
             args["width"] = max(e.width, 0)
         if e.value_mask & cw.BorderWidth:
             args["borderwidth"] = max(e.border_width, 0)
-        w = Window(self.conn, e.window, self)
+        w = Window(orion.conn, e.window, self)
         w.configure(**args)
 
     def handle_MappingNotify(self, e):
-        self.conn.refresh_keymap()
+        orion.conn.refresh_keymap()
         if e.request == xcb.xproto.Mapping.Keyboard:
             self.grabKeys()
 
     def __handle_map_request(self, e):
-        w = Window(self.conn, e.wid, self)
+        w = Window(orion.conn, e.wid, self)
         c = self.manage(w)
         if c and (not c.group or not c.group.screen):
             return
@@ -1242,7 +1237,7 @@ class Nebula(SingletonPlugin):
         keysym = keyboard.keysyms.get(key)
         if keysym is None:
             raise command.CommandError("Unknown key: %s"%key)
-        keycode = self.conn.first_sym_to_code[keysym]
+        keycode = orion.conn.first_sym_to_code[keysym]
         class DummyEv:
             pass
 
@@ -1287,7 +1282,7 @@ class Nebula(SingletonPlugin):
         """
             Sync the X display. Should only be used for development.
         """
-        self.conn.flush()
+        orion.conn.flush()
 
     def cmd_to_screen(self, n):
         """

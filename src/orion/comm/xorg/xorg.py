@@ -1,6 +1,6 @@
 from pyutilib.component.core import ExtensionPoint
 from pyutilib.component.core import implements, SingletonPlugin
-from orion.wm.comm.api import IDisplayServerCommunicator
+from orion.comm.api import IDisplayServerCommunicator
 from ext.api import IXorgExtension
 
 import struct
@@ -11,7 +11,7 @@ from keyboard import xkeysyms
 
 from orion.wm.window import proto
 from orion.wm.window import icccm
-from orion.wm.comm.xorg import keyboard
+from orion.comm.xorg import keyboard
 
 from orion.wm.window.window import Window
 from atom import AtomCache
@@ -81,6 +81,7 @@ class Xorg(SingletonPlugin):
     def init(self, display, qtile):
         self.conn = xcb.xcb.connect(display=display)
         self.setup = self.conn.get_setup()
+        self.keyboard = keyboard
         
         # collect available extensions
         self.__extension_list = []
