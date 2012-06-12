@@ -645,7 +645,7 @@ class Nebula(SingletonPlugin):
         
         if not w.wid in self.windowMap:
             try:
-                w.xxx(self)
+                w.xxx()
                 self.events.window_create(window=w)
                 #c = window.Window(w, self)
             except (xcb.xproto.BadWindow, xcb.xproto.BadAccess):
@@ -991,7 +991,7 @@ class Nebula(SingletonPlugin):
             self.grabKeys()
 
     def __handle_map_request(self, e):
-        w = Window(orion.conn, e.wid, self)
+        w = Window(orion.conn, e.wid)
         c = self.manage(w)
         if c and (not c.group or not c.group.screen):
             return

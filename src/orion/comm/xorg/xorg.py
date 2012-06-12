@@ -30,10 +30,10 @@ class XScreen(_Wrapper):
     """
         This represents an actual X screen.
     """
-    def __init__(self, conn, screen, qtile):
+    def __init__(self, conn, screen):
         _Wrapper.__init__(self, screen)
         self.default_colormap = Colormap(conn, screen.default_colormap)
-        self.root = Window(conn, self.root, qtile)
+        self.root = Window(conn, self.root)
 
 
 
@@ -78,7 +78,7 @@ class Xorg(SingletonPlugin):
             type = Signal
         )
     
-    def init(self, display, qtile):
+    def init(self, display):
         self.conn = xcb.xcb.connect(display=display)
         self.setup = self.conn.get_setup()
         self.keyboard = keyboard
@@ -89,7 +89,7 @@ class Xorg(SingletonPlugin):
             self.__extension_list.append(utils.chrArr(name.name).lower())
             
         # collect screens
-        self.screens = [XScreen(self, i, qtile) for i in self.setup.roots]
+        self.screens = [XScreen(self, i) for i in self.setup.roots]
         self.__extensions = ExtensionPoint(IXorgExtension)
         
         # check for xinerama and randr screens        

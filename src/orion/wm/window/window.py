@@ -64,8 +64,7 @@ AttributeMasks = MaskMap(CW)
 GCMasks = MaskMap(xcb.xproto.GC)
 
 class _BaseWindow(object):
-    def __init__(self, qtile):
-        self.qtile = qtile
+    def __init__(self):
         self.hidden = True
         self.group = None
         self.name = "<no name>"
@@ -433,16 +432,15 @@ class Window(_BaseWindow):
                   EventMask.EnterWindow |\
                   EventMask.FocusChange
     
-    def xxx(self,qtile):
+    def xxx(self):
         self.xx()
         self.update_name()
 
         # add window to the save-set, so it gets mapped when qtile dies
         orion.conn.conn.core.ChangeSaveSet(SetMode.Insert, self.wid)
     
-    def __init__(self, conn, wid, qtile):
-        _BaseWindow.__init__(self, qtile)
-        self.qtile = qtile
+    def __init__(self, conn, wid):
+        _BaseWindow.__init__(self)
         self.conn, self.wid = conn, wid
         
         self.events = SignalGroup(
@@ -788,10 +786,10 @@ class Window(_BaseWindow):
         q = self.conn.conn.core.QueryTree(self.wid).reply()
         root, parent = None, None
         if q.root:
-            root = Window(self.conn, q.root, self.qtile)
+            root = Window(self.conn, q.root)
         if q.parent:
-            parent = Window(self.conn, q.root, self.qtile)
-        return root, parent, [Window(self.conn, i, self.qtile) for i in q.children]
+            parent = Window(self.conn, q.root)
+        return root, parent, [Window(self.conn, cid) for cid in q.children]
     
     
     

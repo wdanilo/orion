@@ -30,7 +30,7 @@ class Orion(object):
         if not displayName:
             raise 
         self.__conn = self.__display_servers()[0]
-        self.__conn.init(displayName, manager)
+        self.__conn.init(displayName)
         self.__conn.events.key_press += manager.events.key_press
         self.__conn.events.key_release += manager.events.key_release
         self.__conn.events.map_request += manager._Nebula__handle_map_request
