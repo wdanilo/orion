@@ -383,11 +383,10 @@ class Nebula(SingletonPlugin):
     def __init__(self):
         self.name = 'nebula'
         
-    def init(self, displayName=None):
+    def init(self):
+        displayName = os.environ.get("DISPLAY")
         if not displayName:
-            displayName = os.environ.get("DISPLAY")
-            if not displayName:
-                raise QtileError("No DISPLAY set.")
+            raise 
 
         '''
         if not fname:
