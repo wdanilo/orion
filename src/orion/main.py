@@ -6,21 +6,17 @@ from orion.accessibility import AccessibilityManager
 import logging
 logger = logging.getLogger(__name__)
 
-################# DEBUG
-from orion.wm import nebula
-from orion.accessibility.shortcuts import manager
-
-
-#######################
-
 class Orion(object):
     def __init__(self):
         self.__window_managers = ExtensionPoint(IWindowManager)
+        self.__accessibility_manager = None
+        
+    
+    def run(self):
         self.__accessibility_manager = AccessibilityManager()
         
         self.DEBUG_TEST()
-    
-    def run(self):
+        
         PluginGlobals.push_env('orion')
         l = Logger('orion', verbose=True)
         manager_count = len(self.__window_managers)
@@ -39,6 +35,13 @@ class Orion(object):
         cmd = sm.cmd
         sm.register('mod4', 'z', cmd.subprocess.Popen('gnome-terminal'))
 
-def run():
-    orion = Orion()
-    orion.run()
+import orion, sys
+orion_inst = Orion()
+orion_inst.__file__ = orion.__file__
+orion_inst.__path__  = orion.__path__
+sys.modules['orion'] = orion_inst
+
+################# DEBUG
+from orion.wm import nebula
+from orion.accessibility.shortcuts import manager
+#######################
