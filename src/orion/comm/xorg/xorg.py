@@ -75,6 +75,13 @@ class Xorg(SingletonPlugin):
             'message',
             'configure_request',
             'map_request',
+            'property_notify',
+            'configure_notify',
+            'map_notify',
+            'leave_notify',
+            'focus_in',
+            'focus_out',
+            'enter',
             type = Signal
         )
     
@@ -236,10 +243,10 @@ class Xorg(SingletonPlugin):
     
     def xpoll(self, conn=None, cond=None):
         eventEvents = [
-            "EnterNotify",
-            "ButtonPress",
-            "ButtonRelease",
-            "KeyPress",
+            "EnterNotifyEvent",
+            "ButtonPressEvent",
+            "ButtonReleaseEvent",
+            "KeyPressEvent",
         ]
         
         while True:
@@ -267,7 +274,6 @@ class Xorg(SingletonPlugin):
                     window = e.event
                 else:
                     print '[4]'
-                e.window = window
                 
             if e.name == 'KeyPressEvent':
                 self.events.key_press(self,
@@ -301,5 +307,35 @@ class Xorg(SingletonPlugin):
                 self.events.map_request(self,
                     wid = e.window,
                 )
+            elif e.name == 'PropertyNotifyEvent':
+                self.events.property_notify(self,
+                    wid = e.window
+                )
+            elif e.name == 'ConfigureNotifyEvent':
+                self.events.configure_notify(self,
+                    wid = e.window
+                )
+            elif e.name == 'MapNotifyEvent':
+                self.events.map_notify(self,
+                    wid = e.window
+                )
+            elif e.name == 'LeaveNotifyEvent':
+                self.events.leave_notify(self,
+                    wid = e.event
+                )
+            elif e.name == 'FocusInEvent':
+                self.events.focus_in(self,
+                    wid = e.event
+                )
+            elif e.name == 'FocusOutEvent':
+                self.events.focus_out(self,
+                    wid = e.event
+                )
+            elif e.name == 'EnterNotifyEvent':
+                self.events.enter(self,
+                    wid = e.event
+                )
+            else:
+                print 'UNKNOWN EVENT: ', e.name
                 
         return True

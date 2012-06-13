@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 class Orion(object):
     def __init__(self):
+        PluginGlobals.push_env('orion')
+        
         self.__window_managers = ExtensionPoint(IWindowManager)
         self.__display_servers = ExtensionPoint(IDisplayServerCommunicator)
         self.__accessibility_manager = None
@@ -17,26 +19,23 @@ class Orion(object):
         
     
     def run(self):
+        Logger('orion', verbose=True)
+        
         self.__accessibility_manager = AccessibilityManager()
         
-        PluginGlobals.push_env('orion')
-        l = Logger('orion', verbose=True)
-        manager_count = len(self.__window_managers)
-        logger.debug('found %s orion window managers'%manager_count)
-        manager = self.__window_managers()[0]
-        self.__window_manager = manager
-        
+        # load Display Server Communicators
         displayName = os.environ.get("DISPLAY")
         if not displayName:
             raise 
         self.__conn = self.__display_servers()[0]
         self.__conn.init(displayName)
-        self.__conn.events.key_press += manager.events.key_press
-        self.__conn.events.key_release += manager.events.key_release
-        self.__conn.events.map_request += manager._Nebula__handle_map_request
         
+        # load window managers
+        manager_count = len(self.__window_managers)
+        logger.debug('found %s orion window managers'%manager_count)
+        manager = self.__window_managers()[0]
+        self.__window_manager = manager
         manager.init()
-        
         
         self.DEBUG_TEST()
         
@@ -56,6 +55,7 @@ class Orion(object):
     @property
     def conn(self): return self.__conn
 
+# replace module 'orion' with class Orion
 import orion, sys
 orion_inst = Orion()
 orion_inst.__file__ = orion.__file__

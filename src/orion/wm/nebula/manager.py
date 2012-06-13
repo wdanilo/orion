@@ -460,6 +460,10 @@ class Nebula(SingletonPlugin):
 
         #self.server = command._Server(self.fname, self, config)
         
+        orion.conn.events.key_press += self.events.key_press
+        orion.conn.events.key_release += self.events.key_release
+        orion.conn.events.map_request += self.__handle_map_request
+        
         self.mouseMap = {}
         for i in self.config.mouse:
             self.mouseMap[i.button_code] = i
@@ -467,13 +471,6 @@ class Nebula(SingletonPlugin):
         self.grabMouse()
         self.scan()
         
-    def handle_display_server(self, server, display):
-        orion.conn = server
-        orion.conn.init(display, self)
-        orion.conn.events.key_press += self.events.key_press
-        orion.conn.events.key_release += self.events.key_release
-        orion.conn.events.map_request += self.__handle_map_request
-
     def _process_screens(self):
         for screen in orion.conn.pseudoscreens:
             self.screens.append(screen)

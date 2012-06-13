@@ -222,6 +222,9 @@ class MonadTall(SingleWindow):
         self.group.layoutAll()
 
     def configure(self, c, screen):
+        import traceback
+        for line in traceback.format_stack():
+            print line.strip()
         "Position client based on order and sizes"
         # if no sizes, normalize
         if not self.sizes:
